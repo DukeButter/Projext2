@@ -13,8 +13,15 @@ const completeMessages = [
   '生命之水收集完成，圣光也为你亮起来了。'
 ];
 
+const coinMessages = [
+  '今日目标完成，像素金币 +1。',
+  '圣水补给达标，金币收入小金库。',
+  '今日仪式圆满，获得一枚亮闪闪金币。'
+];
+
 const cupsCount = document.querySelector('#cupsCount');
 const goalCount = document.querySelector('#goalCount');
+const coinCount = document.querySelector('#coinCount');
 const cupWater = document.querySelector('#cupWater');
 const drinkButton = document.querySelector('#drinkButton');
 const undoButton = document.querySelector('#undoButton');
@@ -108,6 +115,7 @@ function render(state) {
 
   cupsCount.textContent = state.cups;
   goalCount.textContent = state.goal;
+  coinCount.textContent = state.totalCoins || 0;
   goalInput.value = state.goal;
   pausedInput.checked = state.paused;
   startupInput.checked = state.launchAtStartup;
@@ -134,11 +142,13 @@ async function saveSettings(partialSettings) {
 
 drinkButton.addEventListener('click', async () => {
   const wasComplete = currentState && currentState.cups >= currentState.goal;
+  const previousCoins = currentState ? currentState.totalCoins || 0 : 0;
   const nextState = await window.waterApp.drinkWater();
   const isComplete = nextState.cups >= nextState.goal;
+  const earnedCoin = (nextState.totalCoins || 0) > previousCoins;
 
   render(nextState);
-  encouragement.textContent = isComplete ? randomItem(completeMessages) : randomItem(encouragementMessages);
+  encouragement.textContent = earnedCoin ? randomItem(coinMessages) : isComplete ? randomItem(completeMessages) : randomItem(encouragementMessages);
   drinkButton.classList.remove('pop');
   window.requestAnimationFrame(() => drinkButton.classList.add('pop'));
 

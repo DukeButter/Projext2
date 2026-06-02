@@ -9,6 +9,8 @@ const defaultState = {
   date: todayKey(),
   cups: 0,
   goal: 8,
+  totalCoins: 0,
+  lastCoinAwardDate: null,
   intervalMinutes: 60,
   paused: false,
   launchAtStartup: false
@@ -71,6 +73,19 @@ function saveState() {
   fs.writeFileSync(dataFilePath, JSON.stringify(state, null, 2), 'utf-8');
 }
 
+function awardDailyCoinIfGoalComplete() {
+  const currentDate = todayKey();
+  const isComplete = state.cups >= state.goal;
+  const alreadyAwardedToday = state.lastCoinAwardDate === currentDate;
+
+  if (!isComplete || alreadyAwardedToday) {
+    return false;
+  }
+
+  state.totalCoins += 1;
+  state.lastCoinAwardDate = currentDate;
+  return true;
+}
 function createFallbackIcon() {
   const iconSvg = `
     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -226,6 +241,7 @@ app.whenReady().then(() => {
   ipcMain.handle('drink-water', () => {
     ensureTodayState();
     state.cups += 1;
+    awardDailyCoinIfGoalComplete();
     saveState();
     sendStateToRenderer();
     return state;
@@ -277,3 +293,5 @@ app.on('window-all-closed', () => {});
 app.on('before-quit', () => {
   isQuitting = true;
 });
+
+
