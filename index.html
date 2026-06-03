@@ -16,10 +16,18 @@
     <span></span>
   </div>
 
+  <div class="developer-badge" id="developerBadge" hidden>Developer Mode</div>
+
   <main class="app-shell">
-    <div class="coin-counter" aria-label="金币数量">
-      <span class="pixel-coin" aria-hidden="true"></span>
-      <strong id="coinCount">0</strong>
+    <div class="coin-counter" aria-label="货币数量">
+      <div class="currency-line">
+        <span class="pixel-coin token-coin" aria-hidden="true"></span>
+        <strong id="coinCount">0</strong>
+      </div>
+      <div class="currency-line blessing-line">
+        <span class="pixel-coin blessing-coin" aria-hidden="true"></span>
+        <strong id="blessingCoinCount">0</strong>
+      </div>
     </div>
 
     <section class="hero">
@@ -80,6 +88,15 @@
       <p class="encouragement" id="encouragement">小小补水仪式，正在温柔待机。</p>
     </section>
 
+    <section class="blessing-panel" aria-label="圣水赐福抽奖">
+      <div class="blessing-copy">
+        <span>圣水赐福抽奖</span>
+        <strong id="blessingStatus">完成今日补水后，可开启一次赐福。</strong>
+      </div>
+      <button class="blessing-button" id="blessingButton" type="button">开启赐福</button>
+      <p class="blessing-result" id="blessingResult">圣水瓶正在等待今日的光。</p>
+    </section>
+
     <section class="settings-panel" aria-label="提醒设置">
       <div class="setting-line">
         <label for="goalInput">今日目标</label>
@@ -110,6 +127,48 @@
     </section>
   </main>
 
+  <div class="blessing-overlay" id="blessingOverlay" aria-hidden="true">
+    <div class="blessing-stage">
+      <div class="holy-whiteout" aria-hidden="true"></div>
+      <div class="holy-pillar" aria-hidden="true"></div>
+      <div class="holy-shockwave one" aria-hidden="true"></div>
+      <div class="holy-shockwave two" aria-hidden="true"></div>
+      <div class="blessing-burst" aria-hidden="true"></div>
+      <div class="sacred-rune-wheel" aria-hidden="true">✦ ✚ ✧ ✚ ✦ ✧</div>
+      <div class="blessing-ring outer" aria-hidden="true"></div>
+      <div class="blessing-ring inner" aria-hidden="true"></div>
+      <div class="blessing-stars" aria-hidden="true">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="blessing-particles" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="crystal-shards" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="coin-fountain" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+      <div class="blessing-bottle" aria-hidden="true">
+        <div class="blessing-bottle-water"></div>
+        <div class="blessing-bottle-shine"></div>
+      </div>
+      <div class="reward-slot" id="rewardSlot">
+        <span>赐福轮转</span>
+        <strong id="slotRewardName">圣水金币</strong>
+        <em id="slotRewardValue">+5</em>
+      </div>
+      <div class="reward-card" id="rewardCard">
+        <span>赐福降临</span>
+        <strong id="rewardTitle">圣水金币</strong>
+        <em id="rewardSubtitle">+5</em>
+      </div>
+    </div>
+  </div>
+
   <script src="renderer.js"></script>
 </body>
 </html>
+

@@ -4,17 +4,31 @@ const path = require('path');
 
 const APP_NAME = '宝の喝水提醒';
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
+const developerMode = true;
 
 const defaultState = {
   date: todayKey(),
   cups: 0,
   goal: 8,
   totalCoins: 0,
+  blessingCoins: 0,
+  rareSkinFragments: 0,
   lastCoinAwardDate: null,
+  lastBlessingDrawDate: null,
+  blessingHistory: [],
   intervalMinutes: 60,
   paused: false,
-  launchAtStartup: false
+  launchAtStartup: false,
+  developerMode
 };
+
+const blessingRewards = [
+  { id: 'water_coin_5', label: '5 圣水金币', type: 'blessingCoins', amount: 5, chance: 50 },
+  { id: 'water_coin_10', label: '10 圣水金币', type: 'blessingCoins', amount: 10, chance: 30 },
+  { id: 'water_coin_20', label: '20 圣水金币', type: 'blessingCoins', amount: 20, chance: 15 },
+  { id: 'water_coin_50', label: '50 圣水金币', type: 'blessingCoins', amount: 50, chance: 4 },
+  { id: 'rare_skin_fragment', label: '稀有外观碎片', type: 'rareSkinFragments', amount: 1, chance: 1 }
+];
 
 const reminderMessages = [
   '宝，喝一口水吧，今天也要好好照顾自己。',
@@ -45,6 +59,7 @@ function randomItem(list) {
 }
 
 function ensureTodayState() {
+  state.developerMode = developerMode;
   const currentDate = todayKey();
 
   if (state.date !== currentDate) {
@@ -73,9 +88,13 @@ function saveState() {
   fs.writeFileSync(dataFilePath, JSON.stringify(state, null, 2), 'utf-8');
 }
 
+function isGoalComplete() {
+  return state.cups >= state.goal;
+}
+
 function awardDailyCoinIfGoalComplete() {
   const currentDate = todayKey();
-  const isComplete = state.cups >= state.goal;
+  const isComplete = isGoalComplete();
   const alreadyAwardedToday = state.lastCoinAwardDate === currentDate;
 
   if (!isComplete || alreadyAwardedToday) {
@@ -86,6 +105,61 @@ function awardDailyCoinIfGoalComplete() {
   state.lastCoinAwardDate = currentDate;
   return true;
 }
+
+function pickBlessingReward() {
+  const roll = Math.random() * 100;
+  let cursor = 0;
+
+  for (const reward of blessingRewards) {
+    cursor += reward.chance;
+    if (roll < cursor) {
+      return reward;
+    }
+  }
+
+  return blessingRewards[0];
+}
+
+function drawDailyBlessing() {
+  ensureTodayState();
+
+  if (!developerMode && !isGoalComplete()) {
+    return { ok: false, reason: 'goal-incomplete', state };
+  }
+
+  if (!developerMode && state.lastBlessingDrawDate === todayKey()) {
+    return { ok: false, reason: 'already-drawn', state };
+  }
+
+  const reward = pickBlessingReward();
+  const result = {
+    id: reward.id,
+    label: reward.label,
+    type: reward.type,
+    amount: reward.amount,
+    date: todayKey(),
+    awardedAt: new Date().toISOString()
+  };
+
+  if (reward.type === 'blessingCoins') {
+    state.blessingCoins += reward.amount;
+  }
+
+  if (reward.type === 'rareSkinFragments') {
+    state.rareSkinFragments += reward.amount;
+  }
+
+  if (!developerMode) {
+    state.lastBlessingDrawDate = todayKey();
+  }
+  state.lastBlessingReward = result;
+  state.blessingHistory = [result, ...(state.blessingHistory || [])].slice(0, 30);
+  saveState();
+  sendStateToRenderer();
+
+  return { ok: true, reward: result, state };
+}
+
 function createFallbackIcon() {
   const iconSvg = `
     <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -247,6 +321,8 @@ app.whenReady().then(() => {
     return state;
   });
 
+  ipcMain.handle('draw-blessing', () => drawDailyBlessing());
+
   ipcMain.handle('undo-water', () => {
     ensureTodayState();
     state.cups = Math.max(0, state.cups - 1);
@@ -293,5 +369,4 @@ app.on('window-all-closed', () => {});
 app.on('before-quit', () => {
   isQuitting = true;
 });
-
 

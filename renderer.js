@@ -22,6 +22,7 @@ const coinMessages = [
 const cupsCount = document.querySelector('#cupsCount');
 const goalCount = document.querySelector('#goalCount');
 const coinCount = document.querySelector('#coinCount');
+const blessingCoinCount = document.querySelector('#blessingCoinCount');
 const cupWater = document.querySelector('#cupWater');
 const drinkButton = document.querySelector('#drinkButton');
 const undoButton = document.querySelector('#undoButton');
@@ -32,6 +33,30 @@ const startupInput = document.querySelector('#startupInput');
 const progressFill = document.querySelector('#progressFill');
 const progressSegments = document.querySelector('#progressSegments');
 const intervalButtons = [...document.querySelectorAll('[data-minutes]')];
+const blessingButton = document.querySelector('#blessingButton');
+const blessingStatus = document.querySelector('#blessingStatus');
+const blessingResult = document.querySelector('#blessingResult');
+const blessingOverlay = document.querySelector('#blessingOverlay');
+const developerBadge = document.querySelector('#developerBadge');
+const rewardSlot = document.querySelector('#rewardSlot');
+const slotRewardName = document.querySelector('#slotRewardName');
+const slotRewardValue = document.querySelector('#slotRewardValue');
+const rewardCard = document.querySelector('#rewardCard');
+const rewardTitle = document.querySelector('#rewardTitle');
+const rewardSubtitle = document.querySelector('#rewardSubtitle');
+
+const blessingRollItems = [
+  { label: '5 圣水金币', value: '+5', rarity: 'common' },
+  { label: '10 圣水金币', value: '+10', rarity: 'common' },
+  { label: '20 圣水金币', value: '+20', rarity: 'rare' },
+  { label: '50 圣水金币', value: '+50', rarity: 'epic' },
+  { label: '稀有外观碎片', value: '+1', rarity: 'legendary' },
+  { label: '稀有圣物', value: '???', rarity: 'legendary' },
+  { label: '神圣皮肤碎片', value: '???', rarity: 'legendary' },
+  { label: '特殊光环', value: '???', rarity: 'epic' },
+  { label: '大量圣水金币', value: '+50', rarity: 'epic' },
+  { label: '一堆圣水金币', value: '+20', rarity: 'rare' }
+];
 
 const segmentPalette = [
   { base: '#49c9f3', deep: '#268abd', glow: 'rgba(73, 201, 243, 0.5)' },
@@ -45,9 +70,42 @@ const segmentPalette = [
 ];
 let currentState = null;
 let completionTonePlayedForToday = false;
+let blessingAnimationRunning = false;
 
 function randomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function playBlessingCue(cue) {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  const audioContext = new AudioContext();
+  const gain = audioContext.createGain();
+  const cueMap = {
+    open: [220, 330],
+    pillar: [392, 523.25, 784],
+    roll: [659.25],
+    lock: [784, 1046.5],
+    jackpot: [523.25, 659.25, 783.99, 1046.5]
+  };
+  const notes = cueMap[cue] || cueMap.open;
+
+  gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(cue === 'jackpot' ? 0.07 : 0.035, audioContext.currentTime + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + (cue === 'roll' ? 0.16 : 0.72));
+  gain.connect(audioContext.destination);
+
+  notes.forEach((frequency, index) => {
+    const oscillator = audioContext.createOscillator();
+    oscillator.type = cue === 'roll' ? 'square' : 'sine';
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime + index * 0.07);
+    oscillator.connect(gain);
+    oscillator.start(audioContext.currentTime + index * 0.07);
+    oscillator.stop(audioContext.currentTime + 0.2 + index * 0.09);
+  });
+
+  window.setTimeout(() => audioContext.close(), 900);
 }
 
 function playCompletionTone() {
@@ -84,6 +142,112 @@ function celebrateCompletion() {
     playCompletionTone();
   }
 }
+function getTodayKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function getBlessingAvailability(state) {
+  if (state.developerMode) {
+    return { available: true, status: 'Developer Mode：无限赐福测试已开启。' };
+  }
+
+  const isComplete = state.cups >= state.goal;
+  const drawnToday = state.lastBlessingDrawDate === getTodayKey();
+
+  if (!isComplete) {
+    return { available: false, status: '完成今日补水后，可开启一次赐福。' };
+  }
+
+  if (drawnToday) {
+    return { available: false, status: '今日赐福已开启，明天再来。' };
+  }
+
+  return { available: true, status: '今日目标已完成，赐福正在发光。' };
+}
+
+function describeReward(reward) {
+  if (!reward) return '圣水瓶正在等待今日的光。';
+  return reward.type === 'rareSkinFragments' ? `获得 ${reward.label} x${reward.amount}` : `获得 ${reward.label}`;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function getRewardDisplay(reward) {
+  return reward.type === 'rareSkinFragments'
+    ? { label: '稀有外观碎片', value: '+1', rarity: 'legendary' }
+    : { label: `${reward.amount} 圣水金币`, value: `+${reward.amount}`, rarity: reward.amount >= 50 ? 'epic' : reward.amount >= 20 ? 'rare' : 'common' };
+}
+
+function setSlotReward(item) {
+  rewardSlot.dataset.rarity = item.rarity;
+  slotRewardName.textContent = item.label;
+  slotRewardValue.textContent = item.value;
+  rewardSlot.classList.remove('tick');
+  window.requestAnimationFrame(() => rewardSlot.classList.add('tick'));
+}
+
+function showReward(reward) {
+  const display = getRewardDisplay(reward);
+  rewardCard.dataset.rarity = display.rarity;
+  rewardTitle.textContent = display.label;
+  rewardSubtitle.textContent = display.value;
+  rewardCard.classList.add('show');
+}
+
+async function rollBlessingSlot(finalReward) {
+  const finalDisplay = getRewardDisplay(finalReward);
+  const intervals = [48, 48, 52, 56, 62, 68, 78, 92, 110, 136, 168, 210, 270, 340];
+
+  rewardSlot.classList.add('rolling');
+  for (let index = 0; index < intervals.length; index += 1) {
+    const item = blessingRollItems[index % blessingRollItems.length];
+    setSlotReward(item);
+    if (index % 3 === 0) playBlessingCue('roll');
+    await wait(intervals[index]);
+  }
+
+  setSlotReward(finalDisplay);
+  rewardSlot.classList.remove('rolling');
+  rewardSlot.classList.add('locked');
+}
+
+async function playBlessingAnimation(reward) {
+  blessingAnimationRunning = true;
+  rewardCard.classList.remove('show');
+  rewardSlot.classList.remove('locked');
+  blessingOverlay.classList.remove('pillar', 'rolling', 'finale', 'jackpot');
+  blessingOverlay.classList.add('active');
+  blessingOverlay.setAttribute('aria-hidden', 'false');
+
+  playBlessingCue('open');
+  await wait(320);
+  blessingOverlay.classList.add('pillar');
+  playBlessingCue('pillar');
+  await wait(760);
+  blessingOverlay.classList.add('rolling');
+  await rollBlessingSlot(reward);
+  await wait(240);
+  blessingOverlay.classList.add('finale');
+  playBlessingCue('lock');
+  await wait(360);
+  blessingOverlay.classList.add('jackpot');
+  playBlessingCue(reward.amount >= 50 || reward.type === 'rareSkinFragments' ? 'jackpot' : 'pillar');
+  showReward(reward);
+  await wait(2350);
+
+  blessingOverlay.classList.remove('active', 'pillar', 'rolling', 'finale', 'jackpot');
+  blessingOverlay.setAttribute('aria-hidden', 'true');
+  rewardCard.classList.remove('show');
+  rewardSlot.classList.remove('locked', 'tick');
+  blessingAnimationRunning = false;
+}
 
 function renderProgressSegments(state) {
   if (!progressSegments) return;
@@ -116,6 +280,7 @@ function render(state) {
   cupsCount.textContent = state.cups;
   goalCount.textContent = state.goal;
   coinCount.textContent = state.totalCoins || 0;
+  blessingCoinCount.textContent = state.blessingCoins || 0;
   goalInput.value = state.goal;
   pausedInput.checked = state.paused;
   startupInput.checked = state.launchAtStartup;
@@ -124,6 +289,15 @@ function render(state) {
   renderProgressSegments(state);
   cupWater.style.height = `${Math.max(12, percent)}%`;
   document.body.classList.toggle('goal-complete', isComplete);
+
+  developerBadge.hidden = !state.developerMode;
+
+  const blessingAvailability = getBlessingAvailability(state);
+  blessingButton.disabled = blessingAnimationRunning || !blessingAvailability.available;
+  blessingStatus.textContent = blessingAvailability.status;
+  blessingResult.textContent = state.lastBlessingReward && state.lastBlessingReward.date === getTodayKey()
+    ? describeReward(state.lastBlessingReward)
+    : '圣水瓶正在等待今日的光。';
 
   if (!isComplete) {
     completionTonePlayedForToday = false;
@@ -156,6 +330,25 @@ drinkButton.addEventListener('click', async () => {
     celebrateCompletion();
   }
 });
+blessingButton.addEventListener('click', async () => {
+  if (blessingAnimationRunning) return;
+
+  blessingButton.disabled = true;
+  blessingResult.textContent = '圣水瓶正在聚集金色与冰蓝的光。';
+
+  const result = await window.waterApp.drawBlessing();
+
+  if (!result.ok) {
+    render(result.state);
+    blessingResult.textContent = result.reason === 'already-drawn' ? '今日赐福已开启，明天再来。' : '完成今日补水后才可开启赐福。';
+    return;
+  }
+
+  await playBlessingAnimation(result.reward);
+  render(result.state);
+  blessingResult.textContent = describeReward(result.reward);
+  encouragement.textContent = `圣水赐福完成：${describeReward(result.reward)}。`;
+});
 undoButton.addEventListener('click', async () => {
   const nextState = await window.waterApp.undoWater();
   render(nextState);
@@ -184,3 +377,4 @@ intervalButtons.forEach((button) => {
 window.waterApp.onStateChanged(render);
 
 window.waterApp.getState().then(render);
+
