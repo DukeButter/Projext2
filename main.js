@@ -10,7 +10,9 @@ const defaultState = {
   date: todayKey(),
   cups: 0,
   goal: 8,
+  // Sacred water tokens: earned from daily hydration completion and spent on blessings.
   totalCoins: 0,
+  // Sacred water coins: earned from blessing rewards and saved for future shops.
   blessingCoins: 0,
   rareSkinFragments: 0,
   lastCoinAwardDate: null,
@@ -83,6 +85,22 @@ function readState() {
   ensureTodayState();
 }
 
+function getLaunchAtStartupTarget() {
+  const options = {
+    path: process.execPath
+  };
+
+  if (process.defaultApp) {
+    options.args = [app.getAppPath()];
+  }
+
+  return options;
+}
+
+function syncLaunchAtStartupState() {
+  state.launchAtStartup = app.getLoginItemSettings(getLaunchAtStartupTarget()).openAtLogin;
+}
+
 function saveState() {
   fs.mkdirSync(path.dirname(dataFilePath), { recursive: true });
   fs.writeFileSync(dataFilePath, JSON.stringify(state, null, 2), 'utf-8');
@@ -92,7 +110,7 @@ function isGoalComplete() {
   return state.cups >= state.goal;
 }
 
-function awardDailyCoinIfGoalComplete() {
+function awardDailyTokensIfGoalComplete() {
   const currentDate = todayKey();
   const isComplete = isGoalComplete();
   const alreadyAwardedToday = state.lastCoinAwardDate === currentDate;
@@ -101,7 +119,7 @@ function awardDailyCoinIfGoalComplete() {
     return false;
   }
 
-  state.totalCoins += 1;
+  state.totalCoins += 3;
   state.lastCoinAwardDate = currentDate;
   return true;
 }
@@ -123,12 +141,12 @@ function pickBlessingReward() {
 function drawDailyBlessing() {
   ensureTodayState();
 
-  if (!developerMode && !isGoalComplete()) {
-    return { ok: false, reason: 'goal-incomplete', state };
+  if (!developerMode && state.totalCoins < 1) {
+    return { ok: false, reason: 'token-insufficient', state };
   }
 
-  if (!developerMode && state.lastBlessingDrawDate === todayKey()) {
-    return { ok: false, reason: 'already-drawn', state };
+  if (!developerMode) {
+    state.totalCoins -= 1;
   }
 
   const reward = pickBlessingReward();
@@ -291,17 +309,18 @@ function createTray() {
 
 function setLaunchAtStartup(enabled) {
   state.launchAtStartup = enabled;
-
   app.setLoginItemSettings({
-    openAtLogin: enabled,
-    path: process.execPath
+    ...getLaunchAtStartupTarget(),
+    openAtLogin: enabled
   });
+  syncLaunchAtStartupState();
 }
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
   dataFilePath = path.join(app.getPath('userData'), 'water-data.json');
   readState();
+  syncLaunchAtStartupState();
 
   createMainWindow();
   createTray();
@@ -315,7 +334,7 @@ app.whenReady().then(() => {
   ipcMain.handle('drink-water', () => {
     ensureTodayState();
     state.cups += 1;
-    awardDailyCoinIfGoalComplete();
+    awardDailyTokensIfGoalComplete();
     saveState();
     sendStateToRenderer();
     return state;

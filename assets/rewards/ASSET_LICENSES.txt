@@ -16,3 +16,6 @@ Files used from gem-7soul1_20201212:
 - sapphire.png -> reward-sapphire.png
 - diamond.png -> reward-diamond.png
 - crystal_02.png -> reward-fragment.png
+
+Derived UI icons:
+- reward-water-token.png, reward-water-coin.png, reward-water-gold-small.png, and reward-water-gold-large.png are project-specific pixel UI icons drawn for Projext2.

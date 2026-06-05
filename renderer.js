@@ -14,9 +14,9 @@ const completeMessages = [
 ];
 
 const coinMessages = [
-  '今日目标完成，像素金币 +1。',
-  '圣水补给达标，金币收入小金库。',
-  '今日仪式圆满，获得一枚亮闪闪金币。'
+  '今日目标完成，圣水代币 +3。',
+  '圣水补给达标，3 枚圣水代币收入小金库。',
+  '今日仪式圆满，获得 3 枚发光圣水代币。'
 ];
 
 const cupsCount = document.querySelector('#cupsCount');
@@ -158,18 +158,11 @@ function getBlessingAvailability(state) {
     return { available: true, status: 'Developer Mode：无限赐福测试已开启。' };
   }
 
-  const isComplete = state.cups >= state.goal;
-  const drawnToday = state.lastBlessingDrawDate === getTodayKey();
-
-  if (!isComplete) {
-    return { available: false, status: '完成今日补水后，可开启一次赐福。' };
+  if ((state.totalCoins || 0) < 1) {
+    return { available: false, status: '需要 1 枚圣水代币才可开启赐福。' };
   }
 
-  if (drawnToday) {
-    return { available: false, status: '今日赐福已开启，明天再来。' };
-  }
-
-  return { available: true, status: '今日目标已完成，赐福正在发光。' };
+  return { available: true, status: '消耗 1 枚圣水代币，开启一次赐福。' };
 }
 
 function describeReward(reward) {
@@ -187,8 +180,8 @@ function wait(ms) {
 
 function rewardIconMarkup(icon) {
   const paths = {
-    'gold-small': 'assets/rewards/reward-gold-small.png',
-    'gold-large': 'assets/rewards/reward-gold-large.png',
+    'gold-small': 'assets/rewards/reward-water-gold-small.png',
+    'gold-large': 'assets/rewards/reward-water-gold-large.png',
     'chest-open': 'assets/rewards/reward-chest-open.png',
     'chest-closed': 'assets/rewards/reward-chest-closed.png',
     sapphire: 'assets/rewards/reward-sapphire.png',
@@ -376,7 +369,9 @@ blessingButton.addEventListener('click', async () => {
   if (!result.ok) {
     blessingAnimationRunning = false;
     render(result.state);
-    blessingResult.textContent = result.reason === 'already-drawn' ? '今日赐福已开启，明天再来。' : '完成今日补水后才可开启赐福。';
+    blessingResult.textContent = result.reason === 'token-insufficient'
+      ? '圣水代币不足，完成今日补水可获得 3 枚。'
+      : '暂时无法开启赐福。';
     return;
   }
 

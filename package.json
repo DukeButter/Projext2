@@ -1,6 +1,6 @@
 {
   "name": "bao-water-reminder",
-  "version": "1.0.0",
+  "version": "0.8.0",
   "description": "宝の喝水提醒 - a gentle Windows desktop water reminder.",
   "main": "main.js",
   "scripts": {
