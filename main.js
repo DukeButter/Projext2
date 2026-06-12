@@ -36,8 +36,8 @@ const defaultState = {
 };
 
 const skinCatalog = [
-  { id: 'origin', name: '原初', price: 1 },
-  { id: 'hell', name: '恶魔地狱', price: 1 }
+  { id: 'origin', name: '原初', price: 200 },
+  { id: 'hell', name: '恶魔地狱', price: 500 }
 ];
 
 const blessingRewards = [

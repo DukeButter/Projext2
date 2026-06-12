@@ -333,9 +333,11 @@ function renderShop(state) {
   const activeSkin = state.activeSkin || 'sacred';
   const ownsOrigin = ownedSkins.includes('origin');
   const ownsHell = ownedSkins.includes('hell');
-  const hasEnoughCoins = (state.blessingCoins || 0) >= 1;
+  const blessingCoins = state.blessingCoins || 0;
+  const canBuyOrigin = blessingCoins >= 200;
+  const canBuyHell = blessingCoins >= 500;
 
-  shopCoinCount.textContent = state.blessingCoins || 0;
+  shopCoinCount.textContent = blessingCoins;
 
   equipSacredButton.textContent = activeSkin === 'sacred' ? '使用中' : '装备';
   equipSacredButton.disabled = activeSkin === 'sacred';
@@ -347,8 +349,8 @@ function renderShop(state) {
     originSkinButton.textContent = '装备';
     originSkinButton.disabled = false;
   } else {
-    originSkinButton.textContent = '1金币购买';
-    originSkinButton.disabled = !hasEnoughCoins;
+    originSkinButton.textContent = '200金币购买';
+    originSkinButton.disabled = !canBuyOrigin;
   }
 
   if (activeSkin === 'hell') {
@@ -358,8 +360,8 @@ function renderShop(state) {
     hellSkinButton.textContent = '装备';
     hellSkinButton.disabled = false;
   } else {
-    hellSkinButton.textContent = '1金币购买';
-    hellSkinButton.disabled = !hasEnoughCoins;
+    hellSkinButton.textContent = '500金币购买';
+    hellSkinButton.disabled = !canBuyHell;
   }
 }
 
@@ -528,7 +530,7 @@ originSkinButton.addEventListener('click', async () => {
   shopStatus.textContent = result.ok
     ? '原初皮肤已装备。'
     : result.reason === 'coin-insufficient'
-      ? '圣水金币不足，需要 1 枚。'
+      ? '圣水金币不足，需要 200 枚。'
       : '暂时无法购买原初皮肤。';
 });
 
@@ -542,7 +544,7 @@ hellSkinButton.addEventListener('click', async () => {
   shopStatus.textContent = result.ok
     ? '恶魔地狱皮肤已装备。'
     : result.reason === 'coin-insufficient'
-      ? '圣水金币不足，需要 1 枚。'
+      ? '圣水金币不足，需要 500 枚。'
       : '暂时无法购买恶魔地狱皮肤。';
 });
 
