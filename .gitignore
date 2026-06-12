@@ -5,6 +5,7 @@ release/
 
 .env
 .env.*
+.developer-mode
 
 npm-debug.log*
 yarn-debug.log*

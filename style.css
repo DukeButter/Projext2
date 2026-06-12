@@ -897,6 +897,43 @@ h1 {
   box-shadow: 0 0 16px rgba(113, 231, 255, 0.45);
 }
 
+.hell-preview {
+  border-color: rgba(255, 185, 95, 0.9);
+  background:
+    radial-gradient(circle at 50% 88%, rgba(255, 64, 18, 0.62), transparent 34%),
+    linear-gradient(180deg, #1a0205, #4a0906 52%, #0b0204);
+}
+
+.hell-preview::before,
+.hell-preview::after {
+  position: absolute;
+  content: "";
+}
+
+.hell-preview::before {
+  right: 10px;
+  bottom: 0;
+  left: 10px;
+  height: 18px;
+  background: linear-gradient(180deg, #ffb23d, #ff3d13 55%, #791008);
+  box-shadow: 0 0 18px rgba(255, 61, 19, 0.8);
+}
+
+.hell-preview::after {
+  top: 10px;
+  left: 16px;
+  width: 8px;
+  height: 8px;
+  background: #ffde8a;
+  box-shadow: 28px 8px 0 #ff4015, 46px -2px 0 #ff9d2e, 0 0 16px #ff4015;
+}
+
+.hell-preview span {
+  border-color: rgba(255, 224, 138, 0.95);
+  background: linear-gradient(180deg, rgba(255, 109, 31, 0.14) 34%, #ff5b1a 34%, #260205 100%);
+  box-shadow: 0 0 18px rgba(255, 61, 19, 0.65);
+}
+
 .skin-copy {
   display: grid;
   gap: 6px;
@@ -2219,5 +2256,326 @@ body.shop-view.skin-origin .skin-card {
 
 body.shop-view.skin-origin .skin-preview {
   border-width: 3px;
+}
+
+body.skin-hell {
+  --hell-bg: #120104;
+  --hell-panel: rgba(61, 5, 5, 0.82);
+  --hell-text: #fff0d4;
+  --hell-muted: #ffc27a;
+  --hell-lava: #ff4015;
+  --hell-ember: #ff9d2e;
+  --hell-gold: #ffde8a;
+  --hell-ink: #160102;
+  color: var(--hell-text);
+  background:
+    radial-gradient(circle at 50% 100%, rgba(255, 64, 21, 0.42), transparent 36%),
+    radial-gradient(circle at 16% 20%, rgba(255, 157, 46, 0.18), transparent 26%),
+    linear-gradient(180deg, #250105 0%, var(--hell-bg) 66%, #050001 100%);
+}
+
+body.skin-hell::before {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  content: "";
+  background:
+    repeating-linear-gradient(0deg, transparent 0 18px, rgba(255, 157, 46, 0.06) 19px),
+    repeating-linear-gradient(90deg, transparent 0 18px, rgba(255, 64, 21, 0.05) 19px);
+  opacity: 0.8;
+}
+
+body.skin-hell::after {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: -1;
+  height: 42vh;
+  content: "";
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(255, 64, 21, 0.58), transparent 62%),
+    linear-gradient(180deg, transparent, rgba(118, 10, 4, 0.58));
+  pointer-events: none;
+}
+
+body.skin-hell .ambient-particles span {
+  background: var(--hell-ember);
+  box-shadow: 0 0 16px rgba(255, 64, 21, 0.8), 0 0 28px rgba(255, 157, 46, 0.36);
+}
+
+body.skin-hell .coin-counter {
+  border-color: rgba(255, 222, 138, 0.92);
+  color: var(--hell-gold);
+  background: linear-gradient(180deg, rgba(76, 8, 6, 0.94), rgba(15, 1, 4, 0.96));
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 157, 46, 0.22),
+    inset 0 -7px 0 rgba(255, 64, 21, 0.2),
+    0 0 0 3px rgba(13, 1, 3, 0.86),
+    4px 4px 0 rgba(5, 0, 1, 0.54),
+    0 0 24px rgba(255, 64, 21, 0.26);
+}
+
+body.skin-hell .hero,
+body.skin-hell .progress-panel,
+body.skin-hell .blessing-panel,
+body.skin-hell .settings-panel,
+body.skin-hell .shop-panel {
+  border-color: rgba(255, 222, 138, 0.9);
+  background:
+    linear-gradient(180deg, rgba(255, 157, 46, 0.09), rgba(255, 64, 21, 0.06)),
+    linear-gradient(135deg, rgba(68, 6, 6, 0.97), rgba(16, 1, 4, 0.97));
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 64, 21, 0.16),
+    inset 0 0 34px rgba(255, 64, 21, 0.1),
+    0 0 0 4px rgba(13, 1, 3, 0.82),
+    0 0 0 6px rgba(255, 157, 46, 0.24),
+    9px 9px 0 rgba(5, 0, 1, 0.52),
+    0 0 40px rgba(255, 64, 21, 0.18);
+}
+
+body.skin-hell .hero::before,
+body.skin-hell .progress-panel::before,
+body.skin-hell .blessing-panel::before,
+body.skin-hell .settings-panel::before,
+body.skin-hell .shop-panel::before {
+  border-color: rgba(255, 157, 46, 0.46);
+}
+
+body.skin-hell .hero::after,
+body.skin-hell .progress-panel::after,
+body.skin-hell .blessing-panel::after,
+body.skin-hell .settings-panel::after,
+body.skin-hell .shop-panel::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 222, 138, 0.88), transparent);
+  box-shadow: 0 0 20px rgba(255, 64, 21, 0.46);
+}
+
+body.skin-hell .pixel-sky span {
+  background: var(--hell-gold);
+  box-shadow: 0 0 16px rgba(255, 222, 138, 0.78), 0 0 24px rgba(255, 64, 21, 0.4);
+}
+
+body.skin-hell .pixel-sky span:nth-child(2) {
+  background: var(--hell-lava);
+  box-shadow: 0 0 16px rgba(255, 64, 21, 0.9);
+}
+
+body.skin-hell .pixel-sky span:nth-child(3) {
+  background: var(--hell-ember);
+  box-shadow: 0 0 16px rgba(255, 157, 46, 0.84);
+}
+
+body.skin-hell .brand-row,
+body.skin-hell .progress-copy span,
+body.skin-hell .setting-block p,
+body.skin-hell .blessing-copy span,
+body.skin-hell .shop-header span,
+body.skin-hell .skin-copy span {
+  color: var(--hell-gold);
+  text-shadow: 0 0 16px rgba(255, 64, 21, 0.32);
+}
+
+body.skin-hell .tiny-heart {
+  background: var(--hell-lava);
+  box-shadow: 0 0 0 2px var(--hell-ink), 0 0 18px rgba(255, 64, 21, 0.72);
+}
+
+body.skin-hell h1,
+body.skin-hell .progress-copy strong,
+body.skin-hell .reward-card strong {
+  color: var(--hell-text);
+  text-shadow: 0 0 22px rgba(255, 64, 21, 0.48), 3px 3px 0 rgba(20, 1, 2, 0.7);
+}
+
+body.skin-hell .subtitle,
+body.skin-hell .encouragement,
+body.skin-hell .blessing-copy strong,
+body.skin-hell .blessing-result,
+body.skin-hell .shop-status,
+body.skin-hell .skin-copy strong,
+body.skin-hell .setting-line label,
+body.skin-hell .switch-row span,
+body.skin-hell .custom-interval-row span {
+  color: var(--hell-muted);
+}
+
+body.skin-hell .cup {
+  border-color: rgba(255, 222, 138, 0.94);
+  background:
+    linear-gradient(90deg, rgba(255, 222, 138, 0.13), rgba(255, 64, 21, 0.05) 45%, rgba(255, 222, 138, 0.1)),
+    rgba(255, 64, 21, 0.05);
+  box-shadow:
+    inset 0 0 20px rgba(255, 222, 138, 0.16),
+    inset 0 -18px 24px rgba(255, 64, 21, 0.18),
+    0 0 0 3px rgba(17, 1, 3, 0.82),
+    0 0 0 6px rgba(255, 157, 46, 0.18),
+    0 0 48px rgba(255, 64, 21, 0.34);
+}
+
+body.skin-hell .cup::after {
+  border-color: rgba(255, 222, 138, 0.82);
+}
+
+body.skin-hell .water {
+  background:
+    radial-gradient(circle at 26% 22%, rgba(255, 236, 182, 0.78) 0 7px, transparent 8px),
+    repeating-linear-gradient(90deg, rgba(255, 222, 138, 0.18) 0 10px, transparent 10px 20px),
+    linear-gradient(90deg, #ff2c12, #ff9d2e, #8f0b05);
+  box-shadow: inset 0 10px 16px rgba(255, 222, 138, 0.16), 0 0 26px rgba(255, 64, 21, 0.54);
+}
+
+body.skin-hell .water::before {
+  background: radial-gradient(ellipse at center, rgba(255, 222, 138, 0.9) 0 32%, rgba(255, 64, 21, 0.78) 36% 66%, transparent 68%);
+}
+
+body.skin-hell .shine {
+  background: linear-gradient(180deg, rgba(255, 222, 138, 0.68), rgba(255, 222, 138, 0.1));
+}
+
+body.skin-hell .core-icon {
+  opacity: 0.7;
+  filter: sepia(0.8) saturate(2.2) hue-rotate(328deg) drop-shadow(0 0 12px rgba(255, 64, 21, 0.7));
+}
+
+body.skin-hell .sacred-halo {
+  border-color: rgba(255, 64, 21, 0.54);
+  box-shadow:
+    inset 0 0 24px rgba(255, 64, 21, 0.12),
+    0 0 34px rgba(255, 64, 21, 0.28),
+    0 0 58px rgba(255, 157, 46, 0.18);
+}
+
+body.skin-hell .altar-runes {
+  color: rgba(255, 222, 138, 0.86);
+  text-shadow: 0 0 14px rgba(255, 64, 21, 0.7), 0 0 22px rgba(255, 157, 46, 0.34);
+}
+
+body.skin-hell .ear {
+  border-color: var(--hell-ink);
+  background: linear-gradient(180deg, #3a0505, #1b0103);
+}
+
+body.skin-hell .face {
+  border-color: var(--hell-ink);
+  background: linear-gradient(180deg, #39120d, #1a0204);
+  box-shadow: inset 0 -7px 0 rgba(255, 64, 21, 0.22), 0 0 16px rgba(255, 64, 21, 0.14);
+}
+
+body.skin-hell .eye {
+  background: var(--hell-lava);
+  box-shadow: 0 0 10px rgba(255, 64, 21, 0.9);
+}
+
+body.skin-hell .mouth {
+  border-bottom-color: var(--hell-gold);
+}
+
+body.skin-hell .progress-segments span.filled {
+  background: linear-gradient(180deg, #ffde8a 0%, var(--segment-color) 35%, #ff4015 72%, #781006 100%);
+  box-shadow:
+    inset 0 4px 0 rgba(255, 222, 138, 0.24),
+    0 0 14px rgba(255, 64, 21, 0.48),
+    0 0 calc(10px + var(--charge) * 20px) rgba(255, 157, 46, calc(var(--charge) * 0.42));
+}
+
+body.skin-hell .drink-button,
+body.skin-hell .blessing-button,
+body.skin-hell .shop-entry-button,
+body.skin-hell .skin-action-button,
+body.skin-hell .custom-interval-row button {
+  color: #210204;
+  background: linear-gradient(180deg, var(--hell-gold), var(--hell-ember) 52%, var(--hell-lava));
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 222, 138, 0.26),
+    inset 0 -8px 0 rgba(105, 7, 5, 0.22),
+    0 0 0 3px rgba(13, 1, 3, 0.78),
+    5px 5px 0 rgba(5, 0, 1, 0.42),
+    0 0 20px rgba(255, 64, 21, 0.18);
+}
+
+body.skin-hell .undo-button,
+body.skin-hell .shop-back-button,
+body.skin-hell .interval-grid button {
+  color: var(--hell-muted);
+  background: linear-gradient(180deg, rgba(255, 222, 138, 0.08), rgba(255, 64, 21, 0.08));
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 64, 21, 0.1),
+    0 0 0 3px rgba(13, 1, 3, 0.72),
+    4px 4px 0 rgba(5, 0, 1, 0.32);
+}
+
+body.skin-hell .interval-grid button.active {
+  color: #210204;
+  background: linear-gradient(180deg, var(--hell-gold), var(--hell-lava));
+}
+
+body.skin-hell .setting-line input,
+body.skin-hell .custom-interval-row input {
+  border-color: rgba(255, 222, 138, 0.72);
+  color: var(--hell-text);
+  background: rgba(17, 1, 3, 0.74);
+  box-shadow: inset 0 0 16px rgba(255, 64, 21, 0.12), 0 0 0 2px rgba(255, 157, 46, 0.15);
+}
+
+body.skin-hell .switch-row i {
+  border-color: rgba(255, 222, 138, 0.72);
+  background: rgba(17, 1, 3, 0.78);
+  box-shadow: inset 0 0 14px rgba(5, 0, 1, 0.72), 0 0 0 2px rgba(255, 157, 46, 0.15);
+}
+
+body.skin-hell .switch-row i::after {
+  background: linear-gradient(180deg, var(--hell-gold), var(--hell-ember));
+}
+
+body.skin-hell .switch-row input:checked + i {
+  background: rgba(255, 64, 21, 0.38);
+  box-shadow: inset 0 0 16px rgba(255, 64, 21, 0.18), 0 0 18px rgba(255, 64, 21, 0.2);
+}
+
+body.skin-hell .skin-card {
+  border-color: rgba(255, 222, 138, 0.74);
+  background:
+    linear-gradient(180deg, rgba(255, 157, 46, 0.08), rgba(255, 64, 21, 0.06)),
+    rgba(17, 1, 3, 0.48);
+  box-shadow: inset 0 0 0 2px rgba(255, 64, 21, 0.1);
+}
+
+body.skin-hell .skin-preview {
+  border-color: rgba(255, 222, 138, 0.86);
+}
+
+body.shop-view.skin-hell .app-shell {
+  width: min(100%, 470px);
+  padding: 28px 22px 34px;
+}
+
+body.shop-view.skin-hell .shop-panel {
+  margin-top: 24px;
+  padding: 22px;
+}
+
+body.shop-view.skin-hell .shop-header span,
+body.shop-view.skin-hell .skin-copy span {
+  font-size: 21px;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+body.shop-view.skin-hell .shop-header strong,
+body.shop-view.skin-hell .skin-copy strong,
+body.shop-view.skin-hell .shop-status {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+body.shop-view.skin-hell .shop-back-button,
+body.shop-view.skin-hell .skin-action-button {
+  min-height: 42px;
+  font-size: 15px;
+}
+
+body.shop-view.skin-hell .skin-action-button {
+  font-size: 16px;
+  font-weight: 950;
 }
 

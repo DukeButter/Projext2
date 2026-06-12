@@ -57,6 +57,7 @@ const shopCoinCount = document.querySelector('#shopCoinCount');
 const shopStatus = document.querySelector('#shopStatus');
 const equipSacredButton = document.querySelector('#equipSacredButton');
 const originSkinButton = document.querySelector('#originSkinButton');
+const hellSkinButton = document.querySelector('#hellSkinButton');
 
 const homeViewElements = [
   document.querySelector('.hero'),
@@ -331,6 +332,7 @@ function renderShop(state) {
   const ownedSkins = Array.isArray(state.ownedSkins) ? state.ownedSkins : ['sacred'];
   const activeSkin = state.activeSkin || 'sacred';
   const ownsOrigin = ownedSkins.includes('origin');
+  const ownsHell = ownedSkins.includes('hell');
   const hasEnoughCoins = (state.blessingCoins || 0) >= 1;
 
   shopCoinCount.textContent = state.blessingCoins || 0;
@@ -347,6 +349,17 @@ function renderShop(state) {
   } else {
     originSkinButton.textContent = '1金币购买';
     originSkinButton.disabled = !hasEnoughCoins;
+  }
+
+  if (activeSkin === 'hell') {
+    hellSkinButton.textContent = '使用中';
+    hellSkinButton.disabled = true;
+  } else if (ownsHell) {
+    hellSkinButton.textContent = '装备';
+    hellSkinButton.disabled = false;
+  } else {
+    hellSkinButton.textContent = '1金币购买';
+    hellSkinButton.disabled = !hasEnoughCoins;
   }
 }
 
@@ -370,6 +383,7 @@ function render(state) {
   cupWater.style.height = `${Math.max(12, percent)}%`;
   document.body.classList.toggle('goal-complete', isComplete);
   document.body.classList.toggle('skin-origin', state.activeSkin === 'origin');
+  document.body.classList.toggle('skin-hell', state.activeSkin === 'hell');
 
   developerBadge.hidden = !state.developerMode;
 
@@ -516,6 +530,20 @@ originSkinButton.addEventListener('click', async () => {
     : result.reason === 'coin-insufficient'
       ? '圣水金币不足，需要 1 枚。'
       : '暂时无法购买原初皮肤。';
+});
+
+hellSkinButton.addEventListener('click', async () => {
+  const ownedSkins = currentState && Array.isArray(currentState.ownedSkins) ? currentState.ownedSkins : ['sacred'];
+  const result = ownedSkins.includes('hell')
+    ? await window.waterApp.equipSkin('hell')
+    : await window.waterApp.buySkin('hell');
+
+  render(result.state);
+  shopStatus.textContent = result.ok
+    ? '恶魔地狱皮肤已装备。'
+    : result.reason === 'coin-insufficient'
+      ? '圣水金币不足，需要 1 枚。'
+      : '暂时无法购买恶魔地狱皮肤。';
 });
 
 window.waterApp.onStateChanged(render);

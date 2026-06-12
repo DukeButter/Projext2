@@ -2,10 +2,17 @@
 const fs = require('fs');
 const path = require('path');
 
-const APP_NAME = '宝の喝水提醒';
-const APP_ID = 'com.bao.water-reminder';
+const APP_NAME = '我就不喜欢喝水';
+const APP_ID = 'com.wojiubuxihuan.heshui';
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
-const developerMode = true;
+const DEVELOPER_MODE_MARKER_PATH = path.join(__dirname, '.developer-mode');
+const LEGACY_APP_NAMES = ['宝の喝水提醒', '瀹濄伄鍠濇按鎻愰啋'];
+
+function isDeveloperModeEnabled() {
+  return process.env.BAO_WATER_DEVELOPER_MODE === '1' || fs.existsSync(DEVELOPER_MODE_MARKER_PATH);
+}
+
+const developerMode = isDeveloperModeEnabled();
 
 const defaultState = {
   date: todayKey(),
@@ -29,7 +36,8 @@ const defaultState = {
 };
 
 const skinCatalog = [
-  { id: 'origin', name: '原初', price: 1 }
+  { id: 'origin', name: '原初', price: 1 },
+  { id: 'hell', name: '恶魔地狱', price: 1 }
 ];
 
 const blessingRewards = [
@@ -149,6 +157,19 @@ function syncLaunchAtStartupState() {
 function saveState() {
   fs.mkdirSync(path.dirname(dataFilePath), { recursive: true });
   fs.writeFileSync(dataFilePath, JSON.stringify(state, null, 2), 'utf-8');
+}
+
+function migrateLegacyDataIfNeeded() {
+  if (fs.existsSync(dataFilePath)) return;
+
+  for (const legacyName of LEGACY_APP_NAMES) {
+    const legacyDataPath = path.join(app.getPath('appData'), legacyName, 'water-data.json');
+    if (!fs.existsSync(legacyDataPath)) continue;
+
+    fs.mkdirSync(path.dirname(dataFilePath), { recursive: true });
+    fs.copyFileSync(legacyDataPath, dataFilePath);
+    return;
+  }
 }
 
 function isGoalComplete() {
@@ -420,6 +441,7 @@ app.whenReady().then(() => {
   app.setAppUserModelId(APP_ID);
   Menu.setApplicationMenu(null);
   dataFilePath = path.join(app.getPath('userData'), 'water-data.json');
+  migrateLegacyDataIfNeeded();
   readState();
   syncLaunchAtStartupState();
 
