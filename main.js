@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const APP_NAME = '宝の喝水提醒';
+const APP_ID = 'com.bao.water-reminder';
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 const developerMode = true;
 
@@ -19,6 +20,7 @@ const defaultState = {
   lastBlessingDrawDate: null,
   blessingHistory: [],
   intervalMinutes: 60,
+  customIntervalMinutes: 45,
   paused: false,
   launchAtStartup: false,
   developerMode
@@ -33,12 +35,18 @@ const blessingRewards = [
 ];
 
 const reminderMessages = [
-  '宝，喝一口水吧，今天也要好好照顾自己。',
-  '小小补水时间到了。',
-  '喝一口就好，不急，但别忘了自己。',
-  '水分补给站上线啦。',
-  '给自己一点点清爽，继续慢慢来。'
+  '今天也要做喝水大王！！！',
+  '水牛提醒您：该喝水了哞',
+  '让你喝水你就喝水，犟嘴呢怎么（bushi',
+  '喝水啦喝水啦 水喝多了才有尿',
+  '哦 my love~ 喝点水~哦耶~',
+  'Only You~~~ 多喝一点水~',
+  '水时已到（瞄准--',
+  '新事件已触发：饮水',
+  '滴滴 - 检测到羚羊缺水'
 ];
+
+const rareReminderMessage = '恭喜你运气爆棚触发超稀有补水奖励！！！！！！凭此截图可向开发者领取奖励~~~';
 
 let mainWindow;
 let tray;
@@ -58,6 +66,10 @@ function todayKey() {
 
 function randomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
+}
+
+function getReminderMessage() {
+  return Math.random() < 0.02 ? rareReminderMessage : randomItem(reminderMessages);
 }
 
 function ensureTodayState() {
@@ -86,19 +98,40 @@ function readState() {
 }
 
 function getLaunchAtStartupTarget() {
+  if (process.defaultApp) {
+    return null;
+  }
+
   const options = {
     path: process.execPath
   };
 
-  if (process.defaultApp) {
-    options.args = [app.getAppPath()];
-  }
-
   return options;
 }
 
+function getDevelopmentLaunchAtStartupTarget() {
+  return {
+    path: process.execPath,
+    args: [app.getAppPath()]
+  };
+}
+
+function clearDevelopmentLaunchAtStartup() {
+  app.setLoginItemSettings({
+    ...getDevelopmentLaunchAtStartupTarget(),
+    openAtLogin: false
+  });
+}
+
 function syncLaunchAtStartupState() {
-  state.launchAtStartup = app.getLoginItemSettings(getLaunchAtStartupTarget()).openAtLogin;
+  const launchTarget = getLaunchAtStartupTarget();
+  if (!launchTarget) {
+    clearDevelopmentLaunchAtStartup();
+    state.launchAtStartup = false;
+    return;
+  }
+
+  state.launchAtStartup = launchTarget ? app.getLoginItemSettings(launchTarget).openAtLogin : false;
 }
 
 function saveState() {
@@ -262,7 +295,7 @@ function scheduleReminder() {
   const delay = state.intervalMinutes * 60 * 1000;
   reminderTimer = setInterval(() => {
     ensureTodayState();
-    showNotification(APP_NAME, randomItem(reminderMessages));
+    showNotification(APP_NAME, getReminderMessage());
   }, delay);
 }
 
@@ -308,15 +341,25 @@ function createTray() {
 }
 
 function setLaunchAtStartup(enabled) {
+  const launchTarget = getLaunchAtStartupTarget();
+  if (!launchTarget) {
+    clearDevelopmentLaunchAtStartup();
+    state.launchAtStartup = false;
+    showNotification('开机召唤需要安装版', '当前是 Electron 开发模式，注册后会显示 Electron 标志；请用打包后的应用开启。');
+    return;
+  }
+
   state.launchAtStartup = enabled;
   app.setLoginItemSettings({
-    ...getLaunchAtStartupTarget(),
+    ...launchTarget,
     openAtLogin: enabled
   });
   syncLaunchAtStartupState();
 }
 
 app.whenReady().then(() => {
+  app.setName(APP_NAME);
+  app.setAppUserModelId(APP_ID);
   Menu.setApplicationMenu(null);
   dataFilePath = path.join(app.getPath('userData'), 'water-data.json');
   readState();
@@ -358,7 +401,11 @@ app.whenReady().then(() => {
     }
 
     if (typeof settings.intervalMinutes === 'number') {
-      state.intervalMinutes = settings.intervalMinutes;
+      state.intervalMinutes = Math.max(1, Math.min(1440, Math.round(settings.intervalMinutes)));
+    }
+
+    if (typeof settings.customIntervalMinutes === 'number') {
+      state.customIntervalMinutes = Math.max(1, Math.min(1440, Math.round(settings.customIntervalMinutes)));
     }
 
     if (typeof settings.paused === 'boolean') {

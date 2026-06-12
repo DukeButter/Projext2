@@ -110,6 +110,12 @@
           <button type="button" data-minutes="60">1小时</button>
           <button type="button" data-minutes="90">1.5小时</button>
           <button type="button" data-minutes="120">2小时</button>
+          <button class="custom-interval-option" id="customIntervalOption" type="button">自定义时间</button>
+        </div>
+        <div class="custom-interval-row" id="customIntervalRow" hidden>
+          <input id="customIntervalInput" type="number" min="1" max="1440" step="1" aria-label="自定义提醒分钟数">
+          <span>分钟</span>
+          <button id="customIntervalButton" type="button">保存</button>
         </div>
       </div>
 

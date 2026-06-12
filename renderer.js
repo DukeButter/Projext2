@@ -33,6 +33,10 @@ const startupInput = document.querySelector('#startupInput');
 const progressFill = document.querySelector('#progressFill');
 const progressSegments = document.querySelector('#progressSegments');
 const intervalButtons = [...document.querySelectorAll('[data-minutes]')];
+const customIntervalOption = document.querySelector('#customIntervalOption');
+const customIntervalRow = document.querySelector('#customIntervalRow');
+const customIntervalInput = document.querySelector('#customIntervalInput');
+const customIntervalButton = document.querySelector('#customIntervalButton');
 const blessingButton = document.querySelector('#blessingButton');
 const blessingStatus = document.querySelector('#blessingStatus');
 const blessingResult = document.querySelector('#blessingResult');
@@ -333,6 +337,12 @@ function render(state) {
     const isActive = Number(button.dataset.minutes) === state.intervalMinutes;
     button.classList.toggle('active', isActive);
   });
+
+  const presetIntervals = intervalButtons.map((button) => Number(button.dataset.minutes));
+  const isCustomInterval = !presetIntervals.includes(state.intervalMinutes);
+  customIntervalOption.classList.toggle('active', isCustomInterval);
+  customIntervalOption.textContent = isCustomInterval ? `${state.intervalMinutes}分钟` : '自定义时间';
+  customIntervalInput.value = isCustomInterval ? state.intervalMinutes : state.customIntervalMinutes || state.intervalMinutes || 60;
 }
 
 async function saveSettings(partialSettings) {
@@ -403,6 +413,26 @@ intervalButtons.forEach((button) => {
   button.addEventListener('click', () => {
     saveSettings({ intervalMinutes: Number(button.dataset.minutes) });
   });
+});
+
+customIntervalOption.addEventListener('click', () => {
+  customIntervalRow.hidden = !customIntervalRow.hidden;
+  if (!customIntervalRow.hidden) {
+    customIntervalInput.focus();
+    customIntervalInput.select();
+  }
+});
+
+customIntervalButton.addEventListener('click', () => {
+  const intervalMinutes = Math.max(1, Math.min(1440, Math.round(Number(customIntervalInput.value) || 60)));
+  customIntervalRow.hidden = true;
+  saveSettings({ intervalMinutes, customIntervalMinutes: intervalMinutes });
+});
+
+customIntervalInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    customIntervalButton.click();
+  }
 });
 
 window.waterApp.onStateChanged(render);
