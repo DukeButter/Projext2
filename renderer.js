@@ -42,6 +42,11 @@ const blessingStatus = document.querySelector('#blessingStatus');
 const blessingResult = document.querySelector('#blessingResult');
 const blessingOverlay = document.querySelector('#blessingOverlay');
 const developerBadge = document.querySelector('#developerBadge');
+const developerTools = document.querySelector('#developerTools');
+const developerTokenInput = document.querySelector('#developerTokenInput');
+const developerCoinInput = document.querySelector('#developerCoinInput');
+const developerSaveButton = document.querySelector('#developerSaveButton');
+const developerToolsStatus = document.querySelector('#developerToolsStatus');
 const rewardSlot = document.querySelector('#rewardSlot');
 const slotRewardIcon = document.querySelector('#slotRewardIcon');
 const slotRewardName = document.querySelector('#slotRewardName');
@@ -58,12 +63,29 @@ const shopStatus = document.querySelector('#shopStatus');
 const equipSacredButton = document.querySelector('#equipSacredButton');
 const originSkinButton = document.querySelector('#originSkinButton');
 const hellSkinButton = document.querySelector('#hellSkinButton');
+const remindersEntryButton = document.querySelector('#remindersEntryButton');
+const remindersPanel = document.querySelector('#remindersPanel');
+const remindersBackButton = document.querySelector('#remindersBackButton');
+const remindersSummary = document.querySelector('#remindersSummary');
+const remindersList = document.querySelector('#remindersList');
+const remindersStatus = document.querySelector('#remindersStatus');
+const reminderTitleInput = document.querySelector('#reminderTitleInput');
+const reminderTimeInput = document.querySelector('#reminderTimeInput');
+const reminderTimeField = document.querySelector('#reminderTimeField');
+const reminderIntervalField = document.querySelector('#reminderIntervalField');
+const reminderIntervalInput = document.querySelector('#reminderIntervalInput');
+const reminderModeButtons = [...document.querySelectorAll('[data-reminder-mode]')];
+const reminderFrequencyInput = document.querySelector('#reminderFrequencyInput');
+const reminderEnabledInput = document.querySelector('#reminderEnabledInput');
+const reminderResetButton = document.querySelector('#reminderResetButton');
+const reminderSaveButton = document.querySelector('#reminderSaveButton');
 
 const homeViewElements = [
   document.querySelector('.hero'),
   document.querySelector('.progress-panel'),
   document.querySelector('.blessing-panel'),
   document.querySelector('.settings-panel'),
+  remindersEntryButton,
   shopEntryButton
 ];
 
@@ -94,6 +116,8 @@ let currentState = null;
 let completionTonePlayedForToday = false;
 let blessingAnimationRunning = false;
 let currentView = 'home';
+let editingReminderId = null;
+let developerKeyBuffer = '';
 
 function randomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
@@ -174,6 +198,23 @@ function getTodayKey() {
   return `${year}-${month}-${day}`;
 }
 
+function isTypingTarget(element) {
+  if (!element) return false;
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName) || element.isContentEditable;
+}
+
+function getShiftSequenceCharacter(event) {
+  if (/^Key[A-Z]$/.test(event.code)) {
+    return event.code.slice(3).toLowerCase();
+  }
+
+  if (/^Digit[0-9]$/.test(event.code)) {
+    return event.code.slice(5);
+  }
+
+  return '';
+}
+
 function getBlessingAvailability(state) {
   if (state.developerMode) {
     return { available: true, status: 'Developer Mode：无限赐福测试已开启。' };
@@ -184,6 +225,77 @@ function getBlessingAvailability(state) {
   }
 
   return { available: true, status: '消耗 1 枚圣水代币，开启一次赐福。' };
+}
+
+function getFrequencyLabel(frequency) {
+  if (frequency === 'weekdays') return '工作日';
+  if (frequency === 'weekends') return '周末';
+
+  return '每天';
+}
+
+function getDefaultReminderTime() {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() + 30);
+
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function getReminderMode() {
+  const activeButton = reminderModeButtons.find((button) => button.classList.contains('active'));
+  return activeButton ? activeButton.dataset.reminderMode : 'fixed';
+}
+
+function setReminderMode(mode) {
+  const nextMode = mode === 'interval' ? 'interval' : 'fixed';
+  reminderModeButtons.forEach((button) => {
+    button.classList.toggle('active', button.dataset.reminderMode === nextMode);
+  });
+  reminderTimeField.hidden = nextMode !== 'fixed';
+  reminderIntervalField.hidden = nextMode !== 'interval';
+}
+
+function getIntervalLabel(intervalMinutes) {
+  const labels = {
+    60: '每 1 小时',
+    90: '每 1.5 小时',
+    120: '每 2 小时',
+    180: '每 3 小时'
+  };
+
+  return labels[Number(intervalMinutes)] || '每 1 小时';
+}
+
+function getReminderScheduleText(reminder) {
+  return reminder.mode === 'interval'
+    ? getIntervalLabel(reminder.intervalMinutes)
+    : reminder.time;
+}
+
+function resetReminderForm() {
+  editingReminderId = null;
+  reminderTitleInput.value = '';
+  setReminderMode('fixed');
+  reminderTimeInput.value = getDefaultReminderTime();
+  reminderIntervalInput.value = '60';
+  reminderFrequencyInput.value = 'daily';
+  reminderEnabledInput.checked = true;
+  reminderSaveButton.textContent = '保存提醒';
+  remindersStatus.textContent = '可以把吃药、站起来活动、伸懒腰这种事情也塞进来。';
+}
+
+function fillReminderForm(reminder) {
+  editingReminderId = reminder.id;
+  reminderTitleInput.value = reminder.title;
+  setReminderMode(reminder.mode || 'fixed');
+  reminderTimeInput.value = reminder.time;
+  reminderIntervalInput.value = String(reminder.intervalMinutes || 60);
+  reminderFrequencyInput.value = reminder.frequency || 'daily';
+  reminderEnabledInput.checked = reminder.enabled !== false;
+  reminderSaveButton.textContent = '更新提醒';
+  remindersStatus.textContent = '正在编辑已有提醒，改完点更新提醒。';
+  reminderTitleInput.focus();
+  reminderTitleInput.select();
 }
 
 function describeReward(reward) {
@@ -319,13 +431,16 @@ function renderProgressSegments(state) {
 function setView(view) {
   currentView = view;
   const isShopView = view === 'shop';
+  const isRemindersView = view === 'reminders';
 
   homeViewElements.forEach((element) => {
-    if (element) element.hidden = isShopView;
+    if (element) element.hidden = isShopView || isRemindersView;
   });
 
   document.body.classList.toggle('shop-view', isShopView);
+  document.body.classList.toggle('reminders-view', isRemindersView);
   shopPanel.hidden = !isShopView;
+  remindersPanel.hidden = !isRemindersView;
 }
 
 function renderShop(state) {
@@ -365,6 +480,75 @@ function renderShop(state) {
   }
 }
 
+function renderReminders(state) {
+  const reminders = Array.isArray(state.customReminders) ? state.customReminders : [];
+  const enabledCount = reminders.filter((reminder) => reminder.enabled !== false).length;
+
+  remindersSummary.textContent = reminders.length
+    ? `${enabledCount}/${reminders.length} 个提醒已启用`
+    : '还没有额外提醒。';
+  remindersList.innerHTML = '';
+
+  if (!reminders.length) {
+    const empty = document.createElement('p');
+    empty.className = 'reminders-empty';
+    empty.textContent = '先写一个事项、选好时间和频率，再保存。';
+    remindersList.appendChild(empty);
+    return;
+  }
+
+  reminders.forEach((reminder) => {
+    const item = document.createElement('article');
+    item.className = 'reminder-item';
+    item.classList.toggle('disabled', reminder.enabled === false);
+
+    const copy = document.createElement('div');
+    copy.className = 'reminder-item-copy';
+
+    const title = document.createElement('strong');
+    title.textContent = reminder.title;
+
+    const meta = document.createElement('span');
+    meta.textContent = `${getReminderScheduleText(reminder)} / ${getFrequencyLabel(reminder.frequency)}`;
+
+    copy.append(title, meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'reminder-item-actions';
+
+    const toggleButton = document.createElement('button');
+    toggleButton.type = 'button';
+    toggleButton.textContent = reminder.enabled === false ? '启用' : '停用';
+    toggleButton.addEventListener('click', async () => {
+      const nextState = await window.waterApp.saveCustomReminder({
+        ...reminder,
+        enabled: reminder.enabled === false
+      });
+      render(nextState);
+      remindersStatus.textContent = reminder.enabled === false ? '提醒已启用。' : '提醒已停用。';
+    });
+
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.textContent = '编辑';
+    editButton.addEventListener('click', () => fillReminderForm(reminder));
+
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.textContent = '删除';
+    deleteButton.addEventListener('click', async () => {
+      const nextState = await window.waterApp.deleteCustomReminder(reminder.id);
+      if (editingReminderId === reminder.id) resetReminderForm();
+      render(nextState);
+      remindersStatus.textContent = '提醒已删除。';
+    });
+
+    actions.append(toggleButton, editButton, deleteButton);
+    item.append(copy, actions);
+    remindersList.appendChild(item);
+  });
+}
+
 function render(state) {
   currentState = state;
 
@@ -388,6 +572,12 @@ function render(state) {
   document.body.classList.toggle('skin-hell', state.activeSkin === 'hell');
 
   developerBadge.hidden = !state.developerMode;
+  developerTools.hidden = !state.developerMode;
+  developerTokenInput.value = state.totalCoins || 0;
+  developerCoinInput.value = state.blessingCoins || 0;
+  developerToolsStatus.textContent = state.developerMode
+    ? 'Developer Mode 已开启，可以直接调整数值。'
+    : '';
 
   const blessingAvailability = getBlessingAvailability(state);
   blessingButton.disabled = blessingAnimationRunning || !blessingAvailability.available;
@@ -413,6 +603,7 @@ function render(state) {
   customIntervalOption.textContent = isCustomInterval ? `${state.intervalMinutes}分钟` : '自定义时间';
   customIntervalInput.value = isCustomInterval ? state.intervalMinutes : state.customIntervalMinutes || state.intervalMinutes || 60;
   renderShop(state);
+  renderReminders(state);
 }
 
 async function saveSettings(partialSettings) {
@@ -460,6 +651,17 @@ blessingButton.addEventListener('click', async () => {
   blessingResult.textContent = describeReward(result.reward);
   encouragement.textContent = `圣水赐福完成：${describeReward(result.reward)}。`;
 });
+
+developerSaveButton.addEventListener('click', async () => {
+  const result = await window.waterApp.updateDeveloperCurrency({
+    totalCoins: Number(developerTokenInput.value),
+    blessingCoins: Number(developerCoinInput.value)
+  });
+
+  render(result.state);
+  developerToolsStatus.textContent = result.ok ? '开发数值已保存。' : '需要先开启 Developer Mode。';
+});
+
 undoButton.addEventListener('click', async () => {
   const nextState = await window.waterApp.undoWater();
   render(nextState);
@@ -512,6 +714,90 @@ shopEntryButton.addEventListener('click', () => {
 
 shopBackButton.addEventListener('click', () => {
   setView('home');
+});
+
+remindersEntryButton.addEventListener('click', () => {
+  setView('reminders');
+  resetReminderForm();
+});
+
+remindersBackButton.addEventListener('click', () => {
+  setView('home');
+});
+
+reminderResetButton.addEventListener('click', resetReminderForm);
+
+reminderModeButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setReminderMode(button.dataset.reminderMode);
+  });
+});
+
+reminderSaveButton.addEventListener('click', async () => {
+  const title = reminderTitleInput.value.trim();
+  const mode = getReminderMode();
+  const time = reminderTimeInput.value;
+
+  if (!title) {
+    remindersStatus.textContent = '先写一下要提醒的事项。';
+    reminderTitleInput.focus();
+    return;
+  }
+
+  if (mode === 'fixed' && !time) {
+    remindersStatus.textContent = '请选择一个固定提醒时间。';
+    reminderTimeInput.focus();
+    return;
+  }
+
+  const currentReminder = currentState && Array.isArray(currentState.customReminders)
+    ? currentState.customReminders.find((reminder) => reminder.id === editingReminderId)
+    : null;
+  const nextState = await window.waterApp.saveCustomReminder({
+    ...(currentReminder || {}),
+    id: editingReminderId || undefined,
+    title,
+    mode,
+    time,
+    intervalMinutes: Number(reminderIntervalInput.value),
+    frequency: reminderFrequencyInput.value,
+    enabled: reminderEnabledInput.checked
+  });
+
+  render(nextState);
+  resetReminderForm();
+  remindersStatus.textContent = '提醒已保存，到点就会弹出来。';
+});
+
+reminderTitleInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    reminderSaveButton.click();
+  }
+});
+
+window.addEventListener('keydown', async (event) => {
+  if (currentView !== 'home' || isTypingTarget(document.activeElement)) {
+    developerKeyBuffer = '';
+    return;
+  }
+
+  if (!event.shiftKey) {
+    developerKeyBuffer = '';
+    return;
+  }
+
+  const character = getShiftSequenceCharacter(event);
+  if (!character) return;
+
+  developerKeyBuffer = (developerKeyBuffer + character).slice(-5);
+  if (developerKeyBuffer !== 'dm333') return;
+
+  developerKeyBuffer = '';
+  const result = await window.waterApp.toggleDeveloperMode();
+  render(result.state);
+  encouragement.textContent = result.developerMode
+    ? 'Developer Mode 已开启。'
+    : 'Developer Mode 已关闭，回到普通模式。';
 });
 
 equipSacredButton.addEventListener('click', async () => {

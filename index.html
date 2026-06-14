@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我就不喜欢喝水</title>
+  <title>我真的不爱喝水</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -39,7 +39,7 @@
 
       <div class="brand-row">
         <div class="tiny-heart" aria-hidden="true"></div>
-        <p>我就不喜欢喝水</p>
+        <p>我真的不爱喝水</p>
       </div>
 
       <div class="cup-scene" aria-hidden="true">
@@ -95,6 +95,20 @@
       </div>
       <button class="blessing-button" id="blessingButton" type="button">开启赐福</button>
       <p class="blessing-result" id="blessingResult">圣水瓶正在等待今日的光。</p>
+      <div class="developer-tools" id="developerTools" hidden>
+        <div class="developer-tool-grid">
+          <label>
+            <span>圣水代币</span>
+            <input id="developerTokenInput" type="number" min="0" max="999999" step="1">
+          </label>
+          <label>
+            <span>圣水金币</span>
+            <input id="developerCoinInput" type="number" min="0" max="999999" step="1">
+          </label>
+        </div>
+        <button class="developer-save-button" id="developerSaveButton" type="button">保存开发数值</button>
+        <p id="developerToolsStatus">Developer Mode 已开启。</p>
+      </div>
     </section>
 
     <section class="settings-panel" aria-label="提醒设置">
@@ -130,6 +144,61 @@
         <input id="startupInput" type="checkbox">
         <i aria-hidden="true"></i>
       </label>
+    </section>
+
+    <button class="reminders-entry-button" id="remindersEntryButton" type="button">自定义提醒事项</button>
+
+    <section class="reminders-panel" id="remindersPanel" aria-label="自定义提醒事项" hidden>
+      <div class="reminders-header">
+        <button class="reminders-back-button" id="remindersBackButton" type="button">返回</button>
+        <div>
+          <span>自定义提醒事项</span>
+          <strong id="remindersSummary">还没有额外提醒。</strong>
+        </div>
+      </div>
+
+      <div class="reminder-form">
+        <input id="reminderTitleInput" type="text" maxlength="40" placeholder="要提醒的事项" aria-label="要提醒的事项">
+        <div class="reminder-mode-grid" aria-label="提醒方式">
+          <button class="active" type="button" data-reminder-mode="fixed">固定时间</button>
+          <button type="button" data-reminder-mode="interval">间隔重复</button>
+        </div>
+        <div class="reminder-form-grid">
+          <label id="reminderTimeField">
+            <span>固定时间</span>
+            <input id="reminderTimeInput" type="time" aria-label="要提醒的固定时间">
+          </label>
+          <label id="reminderIntervalField" hidden>
+            <span>每隔多久</span>
+            <select id="reminderIntervalInput" aria-label="每隔多久提醒一次">
+              <option value="60">1小时</option>
+              <option value="90">1.5小时</option>
+              <option value="120">2小时</option>
+              <option value="180">3小时</option>
+            </select>
+          </label>
+          <label>
+            <span>生效日期</span>
+            <select id="reminderFrequencyInput" aria-label="要提醒的频率">
+              <option value="daily">每天</option>
+              <option value="weekdays">工作日</option>
+              <option value="weekends">周末</option>
+            </select>
+          </label>
+        </div>
+        <label class="switch-row reminder-enabled-row">
+          <span>启用这个提醒</span>
+          <input id="reminderEnabledInput" type="checkbox" checked>
+          <i aria-hidden="true"></i>
+        </label>
+        <div class="reminder-form-actions">
+          <button class="reminder-secondary-button" id="reminderResetButton" type="button">新建</button>
+          <button class="reminder-save-button" id="reminderSaveButton" type="button">保存提醒</button>
+        </div>
+      </div>
+
+      <div class="reminders-list" id="remindersList"></div>
+      <p class="reminders-status" id="remindersStatus">可以把吃药、站起来活动、伸懒腰这种事情也塞进来。</p>
     </section>
 
     <button class="shop-entry-button" id="shopEntryButton" type="button">圣水皮肤商店</button>

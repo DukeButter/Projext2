@@ -2,17 +2,25 @@
 const fs = require('fs');
 const path = require('path');
 
-const APP_NAME = '我就不喜欢喝水';
-const APP_ID = 'com.wojiubuxihuan.heshui';
+const APP_NAME = '我真的不爱喝水';
+const APP_ID = 'com.wozhendebuai.heshui';
 const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 const DEVELOPER_MODE_MARKER_PATH = path.join(__dirname, '.developer-mode');
-const LEGACY_APP_NAMES = ['宝の喝水提醒', '瀹濄伄鍠濇按鎻愰啋'];
+const LEGACY_DATA_DIR_NAMES = [
+  'wo-zhen-de-bu-ai-heshui',
+  '我就不喜欢喝水',
+  'wo-jiu-bu-xihuan-heshui',
+  'bao-water-reminder',
+  '宝の喝水提醒',
+  '瀹濄伄鍠濇按鎻愰啋',
+  'Electron'
+];
 
 function isDeveloperModeEnabled() {
-  return process.env.BAO_WATER_DEVELOPER_MODE === '1' || fs.existsSync(DEVELOPER_MODE_MARKER_PATH);
+  return process.env.WOZHENDE_WATER_DEVELOPER_MODE === '1' || fs.existsSync(DEVELOPER_MODE_MARKER_PATH);
 }
 
-const developerMode = isDeveloperModeEnabled();
+const initialDeveloperMode = isDeveloperModeEnabled();
 
 const defaultState = {
   date: todayKey(),
@@ -30,9 +38,10 @@ const defaultState = {
   customIntervalMinutes: 45,
   paused: false,
   launchAtStartup: false,
+  customReminders: [],
   ownedSkins: ['sacred'],
   activeSkin: 'sacred',
-  developerMode
+  developerMode: initialDeveloperMode
 };
 
 const skinCatalog = [
@@ -65,6 +74,7 @@ const rareReminderMessage = '恭喜你运气爆棚触发超稀有补水奖励！
 let mainWindow;
 let tray;
 let reminderTimer;
+const customReminderTimers = new Map();
 let state = { ...defaultState };
 let dataFilePath;
 let isQuitting = false;
@@ -86,13 +96,75 @@ function getReminderMessage() {
   return Math.random() < 0.02 ? rareReminderMessage : randomItem(reminderMessages);
 }
 
+function getReminderDayKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function getReminderOccurrenceKey(reminder, date = new Date()) {
+  if (reminder.mode === 'interval') {
+    return `${reminder.id}:${date.toISOString()}`;
+  }
+
+  return `${reminder.id}:${getReminderDayKey(date)}:${reminder.time}`;
+}
+
+function isValidReminderTime(time) {
+  return typeof time === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+}
+
+function normalizeFrequency(frequency) {
+  return ['daily', 'weekdays', 'weekends'].includes(frequency) ? frequency : 'daily';
+}
+
+function normalizeReminderMode(mode) {
+  return mode === 'interval' ? 'interval' : 'fixed';
+}
+
+function normalizeReminderInterval(intervalMinutes) {
+  const interval = Math.round(Number(intervalMinutes) || 60);
+  return [60, 90, 120, 180].includes(interval) ? interval : 60;
+}
+
+function normalizeCustomReminder(reminder = {}) {
+  const id = typeof reminder.id === 'string' && reminder.id.trim()
+    ? reminder.id
+    : `reminder-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const title = typeof reminder.title === 'string' && reminder.title.trim()
+    ? reminder.title.trim().slice(0, 40)
+    : '新的提醒事项';
+  const time = isValidReminderTime(reminder.time) ? reminder.time : '09:00';
+
+  return {
+    id,
+    title,
+    mode: normalizeReminderMode(reminder.mode),
+    time,
+    intervalMinutes: normalizeReminderInterval(reminder.intervalMinutes),
+    frequency: normalizeFrequency(reminder.frequency),
+    enabled: typeof reminder.enabled === 'boolean' ? reminder.enabled : true,
+    lastTriggeredKey: typeof reminder.lastTriggeredKey === 'string' ? reminder.lastTriggeredKey : null,
+    lastIntervalTriggeredAt: typeof reminder.lastIntervalTriggeredAt === 'string' ? reminder.lastIntervalTriggeredAt : null,
+    createdAt: typeof reminder.createdAt === 'string' ? reminder.createdAt : new Date().toISOString(),
+    updatedAt: typeof reminder.updatedAt === 'string' ? reminder.updatedAt : new Date().toISOString()
+  };
+}
+
 function ensureTodayState() {
-  state.developerMode = developerMode;
+  state.developerMode = typeof state.developerMode === 'boolean' ? state.developerMode : initialDeveloperMode;
+  state.totalCoins = Math.max(0, Math.round(Number(state.totalCoins) || 0));
+  state.blessingCoins = Math.max(0, Math.round(Number(state.blessingCoins) || 0));
   state.ownedSkins = Array.isArray(state.ownedSkins) && state.ownedSkins.length > 0 ? state.ownedSkins : ['sacred'];
   if (!state.ownedSkins.includes('sacred')) {
     state.ownedSkins.unshift('sacred');
   }
   state.activeSkin = state.ownedSkins.includes(state.activeSkin) ? state.activeSkin : 'sacred';
+  state.customReminders = Array.isArray(state.customReminders)
+    ? state.customReminders.map(normalizeCustomReminder)
+    : [];
 
   const currentDate = todayKey();
 
@@ -159,17 +231,54 @@ function saveState() {
   fs.writeFileSync(dataFilePath, JSON.stringify(state, null, 2), 'utf-8');
 }
 
-function migrateLegacyDataIfNeeded() {
-  if (fs.existsSync(dataFilePath)) return;
-
-  for (const legacyName of LEGACY_APP_NAMES) {
-    const legacyDataPath = path.join(app.getPath('appData'), legacyName, 'water-data.json');
-    if (!fs.existsSync(legacyDataPath)) continue;
-
-    fs.mkdirSync(path.dirname(dataFilePath), { recursive: true });
-    fs.copyFileSync(legacyDataPath, dataFilePath);
-    return;
+function readStateFile(filePath) {
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch (error) {
+    console.error('Failed to read state file:', filePath, error);
+    return null;
   }
+}
+
+function getLegacyDataFilePaths() {
+  return LEGACY_DATA_DIR_NAMES
+    .map((name) => path.join(app.getPath('appData'), name, 'water-data.json'))
+    .filter((filePath) => path.resolve(filePath) !== path.resolve(dataFilePath));
+}
+
+function mergeStateData(currentState, legacyState) {
+  const merged = { ...defaultState, ...(legacyState || {}), ...(currentState || {}) };
+  const currentDate = (currentState && currentState.date) || merged.date;
+
+  if (legacyState && legacyState.date === currentDate) {
+    merged.cups = Math.max(currentState && Number.isFinite(currentState.cups) ? currentState.cups : 0, legacyState.cups || 0);
+  }
+
+  merged.totalCoins = Math.max(currentState && currentState.totalCoins ? currentState.totalCoins : 0, legacyState && legacyState.totalCoins ? legacyState.totalCoins : 0);
+  merged.blessingCoins = Math.max(currentState && currentState.blessingCoins ? currentState.blessingCoins : 0, legacyState && legacyState.blessingCoins ? legacyState.blessingCoins : 0);
+  merged.rareSkinFragments = Math.max(currentState && currentState.rareSkinFragments ? currentState.rareSkinFragments : 0, legacyState && legacyState.rareSkinFragments ? legacyState.rareSkinFragments : 0);
+  merged.ownedSkins = [...new Set([...(legacyState && Array.isArray(legacyState.ownedSkins) ? legacyState.ownedSkins : []), ...(currentState && Array.isArray(currentState.ownedSkins) ? currentState.ownedSkins : []), 'sacred'])];
+  merged.activeSkin = merged.ownedSkins.includes(merged.activeSkin) ? merged.activeSkin : 'sacred';
+  merged.blessingHistory = [...(currentState && Array.isArray(currentState.blessingHistory) ? currentState.blessingHistory : []), ...(legacyState && Array.isArray(legacyState.blessingHistory) ? legacyState.blessingHistory : [])].slice(0, 30);
+
+  return merged;
+}
+
+function migrateLegacyDataIfNeeded() {
+  let migratedState = readStateFile(dataFilePath) || null;
+
+  for (const legacyDataPath of getLegacyDataFilePaths()) {
+    const legacyState = readStateFile(legacyDataPath);
+    if (!legacyState) continue;
+
+    migratedState = mergeStateData(migratedState, legacyState);
+  }
+
+  if (!migratedState) return;
+
+  fs.mkdirSync(path.dirname(dataFilePath), { recursive: true });
+  fs.writeFileSync(dataFilePath, JSON.stringify(migratedState, null, 2), 'utf-8');
 }
 
 function isGoalComplete() {
@@ -207,11 +316,11 @@ function pickBlessingReward() {
 function drawDailyBlessing() {
   ensureTodayState();
 
-  if (!developerMode && state.totalCoins < 1) {
+  if (!state.developerMode && state.totalCoins < 1) {
     return { ok: false, reason: 'token-insufficient', state };
   }
 
-  if (!developerMode) {
+  if (!state.developerMode) {
     state.totalCoins -= 1;
   }
 
@@ -233,7 +342,7 @@ function drawDailyBlessing() {
     state.rareSkinFragments += reward.amount;
   }
 
-  if (!developerMode) {
+  if (!state.developerMode) {
     state.lastBlessingDrawDate = todayKey();
   }
   state.lastBlessingReward = result;
@@ -284,6 +393,36 @@ function equipSkin(skinId) {
   }
 
   state.activeSkin = skinId;
+  saveState();
+  sendStateToRenderer();
+
+  return { ok: true, state };
+}
+
+function toggleDeveloperMode() {
+  ensureTodayState();
+  state.developerMode = !state.developerMode;
+  saveState();
+  sendStateToRenderer();
+
+  return { ok: true, developerMode: state.developerMode, state };
+}
+
+function updateDeveloperCurrency(currency) {
+  ensureTodayState();
+
+  if (!state.developerMode) {
+    return { ok: false, reason: 'developer-mode-required', state };
+  }
+
+  if (typeof currency.totalCoins === 'number') {
+    state.totalCoins = Math.max(0, Math.min(999999, Math.round(currency.totalCoins)));
+  }
+
+  if (typeof currency.blessingCoins === 'number') {
+    state.blessingCoins = Math.max(0, Math.min(999999, Math.round(currency.blessingCoins)));
+  }
+
   saveState();
   sendStateToRenderer();
 
@@ -363,6 +502,155 @@ function showNotification(title, body) {
   }).show();
 }
 
+function doesFrequencyMatchDate(frequency, date) {
+  const day = date.getDay();
+
+  if (frequency === 'weekdays') return day >= 1 && day <= 5;
+  if (frequency === 'weekends') return day === 0 || day === 6;
+
+  return true;
+}
+
+function getNextCustomReminderDate(reminder, fromDate = new Date()) {
+  if (reminder.mode === 'interval') {
+    return getNextIntervalReminderDate(reminder, fromDate);
+  }
+
+  const [hour, minute] = reminder.time.split(':').map(Number);
+
+  for (let offset = 0; offset < 8; offset += 1) {
+    const candidate = new Date(fromDate);
+    candidate.setDate(candidate.getDate() + offset);
+    candidate.setHours(hour, minute, 0, 0);
+
+    if (candidate <= fromDate) continue;
+    if (!doesFrequencyMatchDate(reminder.frequency, candidate)) continue;
+
+    return candidate;
+  }
+
+  return null;
+}
+
+function getNextIntervalReminderDate(reminder, fromDate = new Date()) {
+  const intervalMs = normalizeReminderInterval(reminder.intervalMinutes) * 60 * 1000;
+  const lastTriggeredAt = reminder.lastIntervalTriggeredAt ? new Date(reminder.lastIntervalTriggeredAt) : null;
+  let candidate = lastTriggeredAt && !Number.isNaN(lastTriggeredAt.getTime())
+    ? new Date(lastTriggeredAt.getTime() + intervalMs)
+    : new Date(fromDate.getTime() + intervalMs);
+
+  if (candidate <= fromDate) {
+    candidate = new Date(fromDate.getTime() + intervalMs);
+  }
+
+  for (let offset = 0; offset < 8; offset += 1) {
+    const dayCandidate = new Date(candidate);
+    dayCandidate.setDate(candidate.getDate() + offset);
+
+    if (!doesFrequencyMatchDate(reminder.frequency, dayCandidate)) continue;
+    if (offset > 0) {
+      dayCandidate.setHours(0, 0, 0, 0);
+      dayCandidate.setTime(dayCandidate.getTime() + intervalMs);
+    }
+
+    return dayCandidate;
+  }
+
+  return null;
+}
+
+function clearCustomReminderTimers() {
+  customReminderTimers.forEach((timer) => clearTimeout(timer));
+  customReminderTimers.clear();
+}
+
+function getFrequencyLabel(frequency) {
+  if (frequency === 'weekdays') return '工作日';
+  if (frequency === 'weekends') return '周末';
+
+  return '每天';
+}
+
+function getReminderScheduleLabel(reminder) {
+  if (reminder.mode === 'interval') {
+    const hours = normalizeReminderInterval(reminder.intervalMinutes) / 60;
+    return `每 ${Number.isInteger(hours) ? hours : hours.toFixed(1)} 小时`;
+  }
+
+  return reminder.time;
+}
+
+function scheduleCustomReminders() {
+  clearCustomReminderTimers();
+
+  for (const reminder of state.customReminders || []) {
+    if (!reminder.enabled || !isValidReminderTime(reminder.time)) continue;
+
+    const nextDate = getNextCustomReminderDate(reminder);
+    if (!nextDate) continue;
+
+    const delay = Math.max(1000, nextDate.getTime() - Date.now());
+    const timer = setTimeout(() => {
+      ensureTodayState();
+
+      const latestReminder = state.customReminders.find((item) => item.id === reminder.id);
+      if (!latestReminder || !latestReminder.enabled) {
+        scheduleCustomReminders();
+        return;
+      }
+
+      const occurrenceKey = getReminderOccurrenceKey(latestReminder, nextDate);
+      if (latestReminder.lastTriggeredKey !== occurrenceKey) {
+        latestReminder.lastTriggeredKey = occurrenceKey;
+        if (latestReminder.mode === 'interval') {
+          latestReminder.lastIntervalTriggeredAt = new Date().toISOString();
+        }
+        showNotification(latestReminder.title, `${getFrequencyLabel(latestReminder.frequency)} ${getReminderScheduleLabel(latestReminder)}`);
+        saveState();
+        sendStateToRenderer();
+      }
+
+      scheduleCustomReminders();
+    }, delay);
+
+    customReminderTimers.set(reminder.id, timer);
+  }
+}
+
+function saveCustomReminder(reminder) {
+  ensureTodayState();
+
+  const normalizedReminder = normalizeCustomReminder(reminder);
+  normalizedReminder.updatedAt = new Date().toISOString();
+  const existingIndex = state.customReminders.findIndex((item) => item.id === normalizedReminder.id);
+
+  if (existingIndex >= 0) {
+    state.customReminders[existingIndex] = {
+      ...state.customReminders[existingIndex],
+      ...normalizedReminder,
+      createdAt: state.customReminders[existingIndex].createdAt
+    };
+  } else {
+    state.customReminders = [normalizedReminder, ...state.customReminders].slice(0, 12);
+  }
+
+  saveState();
+  scheduleCustomReminders();
+  sendStateToRenderer();
+
+  return state;
+}
+
+function deleteCustomReminder(reminderId) {
+  ensureTodayState();
+  state.customReminders = state.customReminders.filter((reminder) => reminder.id !== reminderId);
+  saveState();
+  scheduleCustomReminders();
+  sendStateToRenderer();
+
+  return state;
+}
+
 function scheduleReminder() {
   if (reminderTimer) {
     clearInterval(reminderTimer);
@@ -439,6 +727,7 @@ function setLaunchAtStartup(enabled) {
 app.whenReady().then(() => {
   app.setName(APP_NAME);
   app.setAppUserModelId(APP_ID);
+  app.setPath('userData', path.join(app.getPath('appData'), APP_NAME));
   Menu.setApplicationMenu(null);
   dataFilePath = path.join(app.getPath('userData'), 'water-data.json');
   migrateLegacyDataIfNeeded();
@@ -448,6 +737,7 @@ app.whenReady().then(() => {
   createMainWindow();
   createTray();
   scheduleReminder();
+  scheduleCustomReminders();
 
   ipcMain.handle('get-state', () => {
     ensureTodayState();
@@ -468,6 +758,14 @@ app.whenReady().then(() => {
   ipcMain.handle('buy-skin', (_, skinId) => buySkin(skinId));
 
   ipcMain.handle('equip-skin', (_, skinId) => equipSkin(skinId));
+
+  ipcMain.handle('toggle-developer-mode', () => toggleDeveloperMode());
+
+  ipcMain.handle('update-developer-currency', (_, currency) => updateDeveloperCurrency(currency));
+
+  ipcMain.handle('save-custom-reminder', (_, reminder) => saveCustomReminder(reminder));
+
+  ipcMain.handle('delete-custom-reminder', (_, reminderId) => deleteCustomReminder(reminderId));
 
   ipcMain.handle('undo-water', () => {
     ensureTodayState();
@@ -502,6 +800,7 @@ app.whenReady().then(() => {
 
     saveState();
     scheduleReminder();
+    scheduleCustomReminders();
     buildTrayMenu();
     sendStateToRenderer();
     return state;

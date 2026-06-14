@@ -1,7 +1,7 @@
-{
-  "name": "wo-jiu-bu-xihuan-heshui",
+﻿{
+  "name": "wo-zhen-de-bu-ai-heshui",
   "version": "0.8.0",
-  "description": "我就不喜欢喝水 - a playful Windows desktop water reminder.",
+  "description": "我真的不爱喝水 - a playful Windows desktop water reminder.",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -15,8 +15,8 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.wojiubuxihuan.heshui",
-    "productName": "我就不喜欢喝水",
+    "appId": "com.wozhendebuai.heshui",
+    "productName": "我真的不爱喝水",
     "directories": {
       "output": "dist"
     },

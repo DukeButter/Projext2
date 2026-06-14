@@ -54,7 +54,7 @@ body::after {
   pointer-events: none;
 }
 
-button, input { font: inherit; }
+button, input, select { font: inherit; }
 button { image-rendering: pixelated; }
 
 .ambient-particles {
@@ -185,6 +185,7 @@ button { image-rendering: pixelated; }
 .progress-panel,
 .blessing-panel,
 .settings-panel,
+.reminders-panel,
 .shop-panel {
   position: relative;
   border: 4px solid rgba(255, 253, 242, 0.9);
@@ -205,6 +206,7 @@ button { image-rendering: pixelated; }
 .progress-panel::before,
 .blessing-panel::before,
 .settings-panel::before,
+.reminders-panel::before,
 .shop-panel::before {
   position: absolute;
   inset: 10px;
@@ -218,6 +220,7 @@ button { image-rendering: pixelated; }
 .progress-panel::after,
 .blessing-panel::after,
 .settings-panel::after,
+.reminders-panel::after,
 .shop-panel::after {
   position: absolute;
   top: -6px;
@@ -745,6 +748,7 @@ h1 {
   box-shadow: 0 0 0 3px rgba(5, 9, 22, 0.75), 4px 4px 0 rgba(1, 5, 18, 0.32);
 }
 
+.reminders-entry-button,
 .shop-entry-button {
   width: 100%;
   min-height: 58px;
@@ -763,18 +767,30 @@ h1 {
     0 0 28px rgba(255, 232, 164, 0.2);
 }
 
+.reminders-entry-button {
+  margin-top: 18px;
+  background: linear-gradient(180deg, var(--pearl), var(--ice) 48%, var(--moon));
+}
+
+.reminders-entry-button:hover,
 .shop-entry-button:hover,
+.reminders-back-button:hover,
+.reminder-secondary-button:hover,
+.reminder-save-button:hover,
+.reminder-item-actions button:hover,
 .shop-back-button:hover,
 .skin-action-button:hover {
   transform: translate(-1px, -1px);
   filter: brightness(1.06);
 }
 
+.reminders-panel,
 .shop-panel {
   margin-top: 24px;
   padding: 22px;
 }
 
+.reminders-header,
 .shop-header {
   position: relative;
   display: grid;
@@ -784,11 +800,13 @@ h1 {
   margin-bottom: 18px;
 }
 
+.reminders-header div,
 .shop-header div {
   display: grid;
   gap: 7px;
 }
 
+.reminders-header span,
 .shop-header span,
 .skin-copy span {
   color: rgba(255, 240, 184, 0.96);
@@ -797,8 +815,10 @@ h1 {
   line-height: 1.25;
 }
 
+.reminders-header strong,
 .shop-header strong,
 .skin-copy strong,
+.reminders-status,
 .shop-status {
   color: var(--muted);
   font-size: 14px;
@@ -813,6 +833,10 @@ h1 {
   font-weight: 400;
 }
 
+.reminders-back-button,
+.reminder-secondary-button,
+.reminder-save-button,
+.reminder-item-actions button,
 .shop-back-button,
 .skin-action-button {
   min-height: 42px;
@@ -822,11 +846,175 @@ h1 {
   box-shadow: 0 0 0 3px rgba(5, 9, 22, 0.75), 4px 4px 0 rgba(1, 5, 18, 0.32);
 }
 
+.reminders-back-button,
+.reminder-secondary-button,
 .shop-back-button {
   color: var(--muted);
   font-size: 15px;
   font-weight: 900;
   background: linear-gradient(180deg, rgba(255, 253, 242, 0.12), rgba(174, 238, 255, 0.07));
+}
+
+.reminder-form {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.reminder-mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.reminder-mode-grid button {
+  min-height: 44px;
+  border: 3px solid rgba(255, 253, 242, 0.92);
+  border-radius: 0;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(255, 253, 242, 0.08), rgba(174, 238, 255, 0.06));
+  box-shadow:
+    inset 0 0 0 2px rgba(174, 238, 255, 0.15),
+    0 0 0 3px rgba(5, 9, 22, 0.75),
+    4px 4px 0 rgba(1, 5, 18, 0.32);
+}
+
+.reminder-mode-grid button.active {
+  color: #071024;
+  background: linear-gradient(180deg, var(--pearl), var(--ice));
+  box-shadow: inset 0 0 0 2px rgba(255, 253, 242, 0.38), 0 0 0 3px rgba(5, 9, 22, 0.75), 0 0 24px rgba(174, 238, 255, 0.28);
+}
+
+.reminder-mode-grid button:hover {
+  transform: translate(-1px, -1px);
+  filter: brightness(1.06);
+}
+
+.reminder-form input,
+.reminder-form select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 2px solid rgba(255, 253, 242, 0.75);
+  border-radius: 0;
+  color: var(--pearl);
+  background: rgba(5, 9, 22, 0.72);
+  box-shadow: inset 0 0 16px rgba(174, 238, 255, 0.1), 0 0 0 2px rgba(255, 240, 184, 0.18);
+}
+
+.reminder-form input[type="time"] {
+  font-family: var(--pixel-font);
+  font-size: 12px;
+}
+
+.reminder-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.reminder-form-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.reminder-form-grid span,
+.reminder-enabled-row span {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.reminder-enabled-row {
+  margin-top: 0;
+}
+
+.reminder-form-actions {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 12px;
+}
+
+.reminder-save-button {
+  color: #071024;
+  font-size: 16px;
+  font-weight: 950;
+  background: linear-gradient(180deg, var(--pearl), var(--ice));
+}
+
+.reminders-list {
+  display: grid;
+  gap: 12px;
+}
+
+.reminder-item {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  padding: 14px;
+  border: 3px solid rgba(255, 253, 242, 0.78);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 242, 0.08), rgba(174, 238, 255, 0.04)),
+    rgba(5, 9, 22, 0.46);
+  box-shadow: inset 0 0 0 2px rgba(174, 238, 255, 0.12);
+}
+
+.reminder-item.disabled {
+  opacity: 0.62;
+}
+
+.reminder-item-copy {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reminder-item-copy strong {
+  color: rgba(255, 240, 184, 0.96);
+  font-size: 18px;
+  font-weight: 950;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.reminder-item-copy span,
+.reminders-empty {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.reminder-item-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.reminder-item-actions button {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 900;
+  background: linear-gradient(180deg, rgba(255, 253, 242, 0.12), rgba(174, 238, 255, 0.07));
+}
+
+.reminders-empty {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  border: 2px dashed rgba(255, 253, 242, 0.4);
+}
+
+.reminders-status {
+  min-height: 28px;
+  margin: 14px 0 0;
+  text-align: center;
 }
 
 .skin-shop-grid {
@@ -1028,6 +1216,11 @@ h1 {
   .setting-block p { font-size: 20px; }
   .progress-copy strong { font-size: 16px; }
   .progress-segments { gap: 4px; }
+  .reminder-form-grid,
+  .reminder-mode-grid,
+  .reminder-form-actions,
+  .reminder-item-actions,
+  .developer-tool-grid { grid-template-columns: 1fr; }
 }
 .blessing-copy {
   position: relative;
@@ -1060,6 +1253,78 @@ h1 {
 .blessing-result {
   min-height: 28px;
   margin: 14px 0 0;
+  text-align: center;
+}
+
+.developer-tools {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 3px solid rgba(255, 240, 184, 0.72);
+  background:
+    linear-gradient(180deg, rgba(255, 240, 184, 0.08), rgba(174, 238, 255, 0.05)),
+    rgba(5, 9, 22, 0.5);
+  box-shadow: inset 0 0 0 2px rgba(174, 238, 255, 0.1);
+}
+
+.developer-tools[hidden] {
+  display: none;
+}
+
+.developer-tool-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.developer-tool-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.developer-tool-grid span,
+.developer-tools p {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.developer-tool-grid input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 2px solid rgba(255, 253, 242, 0.75);
+  border-radius: 0;
+  color: var(--pearl);
+  font-family: var(--pixel-font);
+  font-size: 12px;
+  background: rgba(5, 9, 22, 0.72);
+  box-shadow: inset 0 0 16px rgba(174, 238, 255, 0.1), 0 0 0 2px rgba(255, 240, 184, 0.18);
+}
+
+.developer-save-button {
+  min-height: 44px;
+  border: 3px solid rgba(255, 253, 242, 0.92);
+  border-radius: 0;
+  color: #071024;
+  font-size: 15px;
+  font-weight: 950;
+  cursor: pointer;
+  background: linear-gradient(180deg, var(--pearl), var(--moon) 50%, var(--ice));
+  box-shadow: 0 0 0 3px rgba(5, 9, 22, 0.75), 4px 4px 0 rgba(1, 5, 18, 0.32);
+}
+
+.developer-save-button:hover {
+  transform: translate(-1px, -1px);
+  filter: brightness(1.06);
+}
+
+.developer-tools p {
+  min-height: 20px;
+  margin: 0;
   text-align: center;
 }
 
@@ -1886,6 +2151,7 @@ body.skin-origin .hero,
 body.skin-origin .progress-panel,
 body.skin-origin .blessing-panel,
 body.skin-origin .settings-panel,
+body.skin-origin .reminders-panel,
 body.skin-origin .shop-panel {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
@@ -1899,6 +2165,7 @@ body.skin-origin .shop-panel {
 body.skin-origin .progress-panel,
 body.skin-origin .blessing-panel,
 body.skin-origin .settings-panel,
+body.skin-origin .reminders-panel,
 body.skin-origin .shop-panel {
   margin-top: 16px;
   padding: 18px;
@@ -1914,6 +2181,8 @@ body.skin-origin .blessing-panel::before,
 body.skin-origin .blessing-panel::after,
 body.skin-origin .settings-panel::before,
 body.skin-origin .settings-panel::after,
+body.skin-origin .reminders-panel::before,
+body.skin-origin .reminders-panel::after,
 body.skin-origin .shop-panel::before,
 body.skin-origin .shop-panel::after {
   display: none;
@@ -2062,6 +2331,12 @@ body.skin-origin .subtitle,
 body.skin-origin .encouragement,
 body.skin-origin .blessing-copy strong,
 body.skin-origin .blessing-result,
+body.skin-origin .developer-tool-grid span,
+body.skin-origin .developer-tools p,
+body.skin-origin .reminders-header strong,
+body.skin-origin .reminders-status,
+body.skin-origin .reminder-item-copy span,
+body.skin-origin .reminders-empty,
 body.skin-origin .shop-status,
 body.skin-origin .skin-copy strong {
   color: var(--origin-muted);
@@ -2077,6 +2352,8 @@ body.skin-origin .progress-copy {
 body.skin-origin .progress-copy span,
 body.skin-origin .setting-block p,
 body.skin-origin .blessing-copy span,
+body.skin-origin .reminders-header span,
+body.skin-origin .reminder-item-copy strong,
 body.skin-origin .shop-header span,
 body.skin-origin .skin-copy span {
   color: var(--origin-text);
@@ -2127,6 +2404,9 @@ body.skin-origin .progress-fill {
 
 body.skin-origin .drink-button,
 body.skin-origin .blessing-button,
+body.skin-origin .developer-save-button,
+body.skin-origin .reminders-entry-button,
+body.skin-origin .reminder-save-button,
 body.skin-origin .shop-entry-button,
 body.skin-origin .skin-action-button {
   min-height: 54px;
@@ -2140,8 +2420,12 @@ body.skin-origin .skin-action-button {
 }
 
 body.skin-origin .undo-button,
+body.skin-origin .reminders-back-button,
+body.skin-origin .reminder-secondary-button,
+body.skin-origin .reminder-item-actions button,
 body.skin-origin .shop-back-button,
-body.skin-origin .interval-grid button {
+body.skin-origin .interval-grid button,
+body.skin-origin .reminder-mode-grid button {
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 8px;
   color: var(--origin-muted);
@@ -2156,8 +2440,18 @@ body.skin-origin .interval-grid button.active {
   box-shadow: none;
 }
 
+body.skin-origin .reminder-mode-grid button.active {
+  color: var(--origin-bg);
+  border-color: transparent;
+  background: var(--origin-mint);
+  box-shadow: none;
+}
+
 body.skin-origin .setting-line input,
-body.skin-origin .custom-interval-row input {
+body.skin-origin .custom-interval-row input,
+body.skin-origin .developer-tool-grid input,
+body.skin-origin .reminder-form input,
+body.skin-origin .reminder-form select {
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 8px;
   color: var(--origin-text);
@@ -2176,7 +2470,9 @@ body.skin-origin .custom-interval-row button {
 
 body.skin-origin .setting-line label,
 body.skin-origin .switch-row span,
-body.skin-origin .custom-interval-row span {
+body.skin-origin .custom-interval-row span,
+body.skin-origin .reminder-form-grid span,
+body.skin-origin .reminder-enabled-row span {
   color: var(--origin-text);
   font-size: 14px;
 }
@@ -2200,6 +2496,20 @@ body.skin-origin .switch-row input:checked + i {
 }
 
 body.skin-origin .skin-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: var(--origin-panel);
+  box-shadow: none;
+}
+
+body.skin-origin .reminder-item {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: var(--origin-panel);
+  box-shadow: none;
+}
+
+body.skin-origin .developer-tools {
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: var(--origin-panel);
@@ -2318,6 +2628,7 @@ body.skin-hell .hero,
 body.skin-hell .progress-panel,
 body.skin-hell .blessing-panel,
 body.skin-hell .settings-panel,
+body.skin-hell .reminders-panel,
 body.skin-hell .shop-panel {
   border-color: rgba(255, 222, 138, 0.9);
   background:
@@ -2336,6 +2647,7 @@ body.skin-hell .hero::before,
 body.skin-hell .progress-panel::before,
 body.skin-hell .blessing-panel::before,
 body.skin-hell .settings-panel::before,
+body.skin-hell .reminders-panel::before,
 body.skin-hell .shop-panel::before {
   border-color: rgba(255, 157, 46, 0.46);
 }
@@ -2344,6 +2656,7 @@ body.skin-hell .hero::after,
 body.skin-hell .progress-panel::after,
 body.skin-hell .blessing-panel::after,
 body.skin-hell .settings-panel::after,
+body.skin-hell .reminders-panel::after,
 body.skin-hell .shop-panel::after {
   background: linear-gradient(90deg, transparent, rgba(255, 222, 138, 0.88), transparent);
   box-shadow: 0 0 20px rgba(255, 64, 21, 0.46);
@@ -2368,6 +2681,8 @@ body.skin-hell .brand-row,
 body.skin-hell .progress-copy span,
 body.skin-hell .setting-block p,
 body.skin-hell .blessing-copy span,
+body.skin-hell .reminders-header span,
+body.skin-hell .reminder-item-copy strong,
 body.skin-hell .shop-header span,
 body.skin-hell .skin-copy span {
   color: var(--hell-gold);
@@ -2390,11 +2705,19 @@ body.skin-hell .subtitle,
 body.skin-hell .encouragement,
 body.skin-hell .blessing-copy strong,
 body.skin-hell .blessing-result,
+body.skin-hell .developer-tool-grid span,
+body.skin-hell .developer-tools p,
+body.skin-hell .reminders-header strong,
+body.skin-hell .reminders-status,
+body.skin-hell .reminder-item-copy span,
+body.skin-hell .reminders-empty,
 body.skin-hell .shop-status,
 body.skin-hell .skin-copy strong,
 body.skin-hell .setting-line label,
 body.skin-hell .switch-row span,
-body.skin-hell .custom-interval-row span {
+body.skin-hell .custom-interval-row span,
+body.skin-hell .reminder-form-grid span,
+body.skin-hell .reminder-enabled-row span {
   color: var(--hell-muted);
 }
 
@@ -2479,6 +2802,9 @@ body.skin-hell .progress-segments span.filled {
 
 body.skin-hell .drink-button,
 body.skin-hell .blessing-button,
+body.skin-hell .developer-save-button,
+body.skin-hell .reminders-entry-button,
+body.skin-hell .reminder-save-button,
 body.skin-hell .shop-entry-button,
 body.skin-hell .skin-action-button,
 body.skin-hell .custom-interval-row button {
@@ -2493,8 +2819,12 @@ body.skin-hell .custom-interval-row button {
 }
 
 body.skin-hell .undo-button,
+body.skin-hell .reminders-back-button,
+body.skin-hell .reminder-secondary-button,
+body.skin-hell .reminder-item-actions button,
 body.skin-hell .shop-back-button,
-body.skin-hell .interval-grid button {
+body.skin-hell .interval-grid button,
+body.skin-hell .reminder-mode-grid button {
   color: var(--hell-muted);
   background: linear-gradient(180deg, rgba(255, 222, 138, 0.08), rgba(255, 64, 21, 0.08));
   box-shadow:
@@ -2508,8 +2838,16 @@ body.skin-hell .interval-grid button.active {
   background: linear-gradient(180deg, var(--hell-gold), var(--hell-lava));
 }
 
+body.skin-hell .reminder-mode-grid button.active {
+  color: #210204;
+  background: linear-gradient(180deg, var(--hell-gold), var(--hell-lava));
+}
+
 body.skin-hell .setting-line input,
-body.skin-hell .custom-interval-row input {
+body.skin-hell .custom-interval-row input,
+body.skin-hell .developer-tool-grid input,
+body.skin-hell .reminder-form input,
+body.skin-hell .reminder-form select {
   border-color: rgba(255, 222, 138, 0.72);
   color: var(--hell-text);
   background: rgba(17, 1, 3, 0.74);
@@ -2532,6 +2870,22 @@ body.skin-hell .switch-row input:checked + i {
 }
 
 body.skin-hell .skin-card {
+  border-color: rgba(255, 222, 138, 0.74);
+  background:
+    linear-gradient(180deg, rgba(255, 157, 46, 0.08), rgba(255, 64, 21, 0.06)),
+    rgba(17, 1, 3, 0.48);
+  box-shadow: inset 0 0 0 2px rgba(255, 64, 21, 0.1);
+}
+
+body.skin-hell .reminder-item {
+  border-color: rgba(255, 222, 138, 0.74);
+  background:
+    linear-gradient(180deg, rgba(255, 157, 46, 0.08), rgba(255, 64, 21, 0.06)),
+    rgba(17, 1, 3, 0.48);
+  box-shadow: inset 0 0 0 2px rgba(255, 64, 21, 0.1);
+}
+
+body.skin-hell .developer-tools {
   border-color: rgba(255, 222, 138, 0.74);
   background:
     linear-gradient(180deg, rgba(255, 157, 46, 0.08), rgba(255, 64, 21, 0.06)),
