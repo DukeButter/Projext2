@@ -1203,6 +1203,7 @@ h1 {
 @keyframes floatParticle { 0%, 100% { opacity: 0.28; transform: translateY(0); } 50% { opacity: 0.82; transform: translateY(-18px); } }
 @keyframes twinkle { 0%, 100% { opacity: 0.32; transform: scale(0.82); } 50% { opacity: 1; transform: scale(1.12); } }
 @keyframes segmentBless { 0%, 100% { filter: brightness(1); transform: translateY(0); } 50% { filter: brightness(1.14); transform: translateY(-1px); } }
+@keyframes hellForgePulse { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.16); } }
 @keyframes runePulse { 0%, 100% { opacity: 0.58; } 50% { opacity: 1; } }
 @keyframes coreBless { 0%, 100% { opacity: 0.64; transform: translate(-50%, -50%) scale(0.96); } 50% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.04); } }
 @keyframes softPop { 50% { transform: translateY(-3px) scale(1.015); } }
@@ -2677,6 +2678,32 @@ body.skin-hell .pixel-sky span:nth-child(3) {
   box-shadow: 0 0 16px rgba(255, 157, 46, 0.84);
 }
 
+body.skin-hell .hero .pixel-sky::before,
+body.skin-hell .hero .pixel-sky::after {
+  position: absolute;
+  z-index: 1;
+  color: rgba(255, 222, 138, 0.78);
+  font-family: var(--pixel-font);
+  font-size: 18px;
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(255, 64, 21, 0.78), 0 0 22px rgba(255, 157, 46, 0.42);
+  pointer-events: none;
+}
+
+body.skin-hell .hero .pixel-sky::before {
+  top: 72px;
+  left: 28px;
+  content: "🜏";
+  transform: rotate(-12deg);
+}
+
+body.skin-hell .hero .pixel-sky::after {
+  right: 34px;
+  bottom: 76px;
+  content: "⛧";
+  transform: rotate(10deg);
+}
+
 body.skin-hell .brand-row,
 body.skin-hell .progress-copy span,
 body.skin-hell .setting-block p,
@@ -2769,6 +2796,8 @@ body.skin-hell .sacred-halo {
 
 body.skin-hell .altar-runes {
   color: rgba(255, 222, 138, 0.86);
+  font-size: 20px;
+  letter-spacing: 8px;
   text-shadow: 0 0 14px rgba(255, 64, 21, 0.7), 0 0 22px rgba(255, 157, 46, 0.34);
 }
 
@@ -2792,12 +2821,112 @@ body.skin-hell .mouth {
   border-bottom-color: var(--hell-gold);
 }
 
-body.skin-hell .progress-segments span.filled {
-  background: linear-gradient(180deg, #ffde8a 0%, var(--segment-color) 35%, #ff4015 72%, #781006 100%);
+body.skin-hell .progress-track {
+  min-height: 78px;
+  margin: 22px 0 26px;
+  padding: 12px 14px;
+  border-color: rgba(255, 222, 138, 0.95);
+  background:
+    linear-gradient(135deg, transparent 0 14px, rgba(17, 1, 3, 0.96) 14px calc(100% - 14px), transparent calc(100% - 14px)),
+    radial-gradient(circle at 18% 86%, rgba(255, 64, 21, 0.36), transparent 36%),
+    linear-gradient(180deg, rgba(255, 157, 46, 0.14), rgba(17, 1, 3, 0.86) 42%, rgba(5, 0, 1, 0.96));
   box-shadow:
-    inset 0 4px 0 rgba(255, 222, 138, 0.24),
-    0 0 14px rgba(255, 64, 21, 0.48),
-    0 0 calc(10px + var(--charge) * 20px) rgba(255, 157, 46, calc(var(--charge) * 0.42));
+    inset 0 0 0 3px rgba(79, 5, 5, 0.92),
+    inset 0 -14px 18px rgba(255, 64, 21, 0.16),
+    0 0 0 4px rgba(13, 1, 3, 0.86),
+    0 0 0 7px rgba(255, 157, 46, 0.22),
+    7px 7px 0 rgba(5, 0, 1, 0.48),
+    0 0 34px rgba(255, 64, 21, 0.24);
+  clip-path: polygon(12px 0, calc(100% - 12px) 0, 100% 16px, 100% calc(100% - 16px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 16px), 0 16px);
+}
+
+body.skin-hell .progress-track::before {
+  inset: -13px 28px auto;
+  height: 10px;
+  background:
+    linear-gradient(135deg, transparent 0 9px, rgba(255, 222, 138, 0.95) 9px 18px, transparent 18px),
+    linear-gradient(90deg, transparent, rgba(255, 64, 21, 0.95), rgba(255, 222, 138, 0.95), rgba(255, 64, 21, 0.95), transparent);
+  box-shadow: 0 0 20px rgba(255, 64, 21, 0.72);
+}
+
+body.skin-hell .progress-track::after {
+  inset: 11px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 222, 138, 0.08) 0 7px, transparent 7px 15px),
+    linear-gradient(180deg, rgba(255, 222, 138, 0.16), transparent 42%);
+  mix-blend-mode: screen;
+}
+
+body.skin-hell .progress-segments {
+  gap: 7px;
+  min-height: 50px;
+}
+
+body.skin-hell .progress-segments span {
+  min-height: 50px;
+  border-color: rgba(255, 157, 46, 0.52);
+  background:
+    linear-gradient(135deg, transparent 0 8px, rgba(28, 2, 4, 0.98) 8px calc(100% - 8px), transparent calc(100% - 8px)),
+    linear-gradient(180deg, rgba(255, 222, 138, 0.08), rgba(255, 64, 21, 0.04)),
+    rgba(10, 1, 3, 0.96);
+  box-shadow:
+    inset 0 0 0 2px rgba(5, 0, 1, 0.86),
+    inset 0 -8px 0 rgba(255, 64, 21, 0.06),
+    0 0 10px rgba(255, 64, 21, 0.1);
+  clip-path: polygon(9px 0, 100% 0, calc(100% - 9px) 100%, 0 100%);
+}
+
+body.skin-hell .progress-segments span::before {
+  inset: 7px 8px;
+  background:
+    linear-gradient(135deg, transparent 0 6px, rgba(255, 222, 138, 0.1) 6px 9px, transparent 9px),
+    linear-gradient(180deg, rgba(255, 157, 46, 0.12), transparent 58%);
+}
+
+body.skin-hell .progress-segments span.filled {
+  border-color: rgba(255, 222, 138, 0.98);
+  background:
+    radial-gradient(circle at 50% 78%, rgba(255, 222, 138, 0.45) 0 10px, transparent 11px),
+    repeating-linear-gradient(90deg, rgba(255, 222, 138, 0.16) 0 5px, transparent 5px 11px),
+    linear-gradient(180deg, #fff0b0 0%, var(--segment-color) 24%, color-mix(in srgb, var(--segment-color) 72%, var(--hell-ember)) 48%, color-mix(in srgb, var(--segment-deep) 72%, var(--hell-lava)) 76%, var(--segment-deep) 100%);
+  box-shadow:
+    inset 0 5px 0 rgba(255, 222, 138, 0.26),
+    inset 0 -9px 0 rgba(79, 5, 5, 0.26),
+    0 0 15px var(--segment-glow),
+    0 0 calc(14px + var(--charge) * 24px) var(--segment-glow);
+  animation: hellForgePulse 2.6s steps(6, end) infinite;
+}
+
+body.skin-hell .progress-segments span.filled::before {
+  inset: -8px 4px auto;
+  height: 22px;
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(255, 222, 138, 0.98) 0 14%, rgba(255, 157, 46, 0.9) 22% 44%, rgba(255, 64, 21, 0.62) 58%, transparent 70%);
+  transform: skewX(-8deg);
+  mix-blend-mode: screen;
+}
+
+body.skin-hell .progress-segments span.filled::after {
+  position: absolute;
+  right: 7px;
+  bottom: 6px;
+  left: 7px;
+  height: 8px;
+  content: "";
+  background:
+    linear-gradient(135deg, transparent 0 7px, rgba(255, 222, 138, 0.72) 7px 10px, transparent 10px),
+    linear-gradient(90deg, transparent, rgba(255, 222, 138, 0.42), transparent);
+  box-shadow: 0 0 12px rgba(255, 222, 138, 0.3);
+}
+
+body.skin-hell .progress-segments span.filled:last-child {
+  background:
+    radial-gradient(circle at 50% 72%, rgba(255, 240, 184, 0.5) 0 12px, transparent 13px),
+    linear-gradient(180deg, #fff3be 0%, var(--segment-color) 20%, color-mix(in srgb, var(--segment-color) 64%, var(--hell-ember)) 44%, var(--hell-lava) 70%, var(--segment-deep) 100%);
+  box-shadow:
+    inset 0 5px 0 rgba(255, 240, 184, 0.32),
+    0 0 24px var(--segment-glow),
+    0 0 44px rgba(255, 157, 46, 0.46);
 }
 
 body.skin-hell .drink-button,

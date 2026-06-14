@@ -112,12 +112,24 @@ const segmentPalette = [
   { base: '#ffd86f', deep: '#d79b36', glow: 'rgba(255, 216, 111, 0.66)' },
   { base: '#ffbd45', deep: '#c87b22', glow: 'rgba(255, 189, 69, 0.72)' }
 ];
+
+const hellSegmentPalette = [
+  { base: '#7a0b05', deep: '#2a0203', glow: 'rgba(255, 64, 21, 0.28)' },
+  { base: '#a61607', deep: '#3a0203', glow: 'rgba(255, 64, 21, 0.34)' },
+  { base: '#d52b0e', deep: '#610704', glow: 'rgba(255, 64, 21, 0.42)' },
+  { base: '#f04d16', deep: '#7f1205', glow: 'rgba(255, 91, 26, 0.5)' },
+  { base: '#ff7924', deep: '#9f2708', glow: 'rgba(255, 121, 36, 0.56)' },
+  { base: '#ff9d2e', deep: '#c44a0a', glow: 'rgba(255, 157, 46, 0.62)' },
+  { base: '#ffc04f', deep: '#d66612', glow: 'rgba(255, 192, 79, 0.68)' },
+  { base: '#ffde8a', deep: '#ff7a19', glow: 'rgba(255, 222, 138, 0.74)' }
+];
 let currentState = null;
 let completionTonePlayedForToday = false;
 let blessingAnimationRunning = false;
 let currentView = 'home';
 let editingReminderId = null;
 let developerKeyBuffer = '';
+let romanceKeyBuffer = '';
 
 function randomItem(list) {
   return list[Math.floor(Math.random() * list.length)];
@@ -198,6 +210,39 @@ function getTodayKey() {
   return `${year}-${month}-${day}`;
 }
 
+function applyHellTerminology(isHellSkin) {
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+
+  while (walker.nextNode()) {
+    textNodes.push(walker.currentNode);
+  }
+
+  textNodes.forEach((node) => {
+    const currentText = node.nodeValue;
+    if (!currentText || !currentText.trim()) return;
+
+    if (isHellSkin) {
+      if (!currentText.includes('硫磺火')) {
+        node.__baseText = currentText;
+      }
+
+      const baseText = node.__baseText || currentText.replaceAll('硫磺火', '圣水');
+      node.nodeValue = baseText.replaceAll('圣水', '硫磺火');
+      return;
+    }
+
+    if (node.__baseText) {
+      node.nodeValue = node.__baseText;
+      node.__baseText = null;
+    }
+  });
+}
+
+function refreshSkinTerminology() {
+  applyHellTerminology(currentState && currentState.activeSkin === 'hell');
+}
+
 function isTypingTarget(element) {
   if (!element) return false;
   return ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName) || element.isContentEditable;
@@ -213,6 +258,23 @@ function getShiftSequenceCharacter(event) {
   }
 
   return '';
+}
+
+function getSequenceCharacter(event) {
+  if (event.key.length !== 1) return '';
+  return event.key.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function updateRomanceEasterEgg(event) {
+  const character = getSequenceCharacter(event);
+  if (!character) return;
+
+  romanceKeyBuffer = (romanceKeyBuffer + character).slice(-12);
+  const phrases = ['missyou', 'missu', 'loveyou', 'iloveyou'];
+  if (!phrases.some((phrase) => romanceKeyBuffer.endsWith(phrase))) return;
+
+  romanceKeyBuffer = '';
+  encouragement.textContent = 'I know';
 }
 
 function getBlessingAvailability(state) {
@@ -411,13 +473,14 @@ function renderProgressSegments(state) {
 
   progressSegments.innerHTML = '';
   progressSegments.style.setProperty('--segment-count', state.goal);
+  const paletteSource = state.activeSkin === 'hell' ? hellSegmentPalette : segmentPalette;
 
   for (let index = 0; index < state.goal; index += 1) {
     const segment = document.createElement('span');
     const isFilled = index < state.cups;
     const charge = state.goal <= 1 ? 1 : index / (state.goal - 1);
-    const paletteIndex = Math.min(segmentPalette.length - 1, Math.floor(charge * segmentPalette.length));
-    const palette = segmentPalette[paletteIndex];
+    const paletteIndex = Math.min(paletteSource.length - 1, Math.floor(charge * paletteSource.length));
+    const palette = paletteSource[paletteIndex];
 
     segment.className = isFilled ? 'filled' : '';
     segment.style.setProperty('--charge', charge.toFixed(2));
@@ -526,6 +589,7 @@ function renderReminders(state) {
       });
       render(nextState);
       remindersStatus.textContent = reminder.enabled === false ? '提醒已启用。' : '提醒已停用。';
+      refreshSkinTerminology();
     });
 
     const editButton = document.createElement('button');
@@ -541,6 +605,7 @@ function renderReminders(state) {
       if (editingReminderId === reminder.id) resetReminderForm();
       render(nextState);
       remindersStatus.textContent = '提醒已删除。';
+      refreshSkinTerminology();
     });
 
     actions.append(toggleButton, editButton, deleteButton);
@@ -604,6 +669,7 @@ function render(state) {
   customIntervalInput.value = isCustomInterval ? state.intervalMinutes : state.customIntervalMinutes || state.intervalMinutes || 60;
   renderShop(state);
   renderReminders(state);
+  applyHellTerminology(state.activeSkin === 'hell');
 }
 
 async function saveSettings(partialSettings) {
@@ -620,6 +686,7 @@ drinkButton.addEventListener('click', async () => {
 
   render(nextState);
   encouragement.textContent = earnedCoin ? randomItem(coinMessages) : isComplete ? randomItem(completeMessages) : randomItem(encouragementMessages);
+  refreshSkinTerminology();
   drinkButton.classList.remove('pop');
   window.requestAnimationFrame(() => drinkButton.classList.add('pop'));
 
@@ -643,6 +710,7 @@ blessingButton.addEventListener('click', async () => {
     blessingResult.textContent = result.reason === 'token-insufficient'
       ? '圣水代币不足，完成今日补水可获得 3 枚。'
       : '暂时无法开启赐福。';
+    refreshSkinTerminology();
     return;
   }
 
@@ -650,6 +718,7 @@ blessingButton.addEventListener('click', async () => {
   render(result.state);
   blessingResult.textContent = describeReward(result.reward);
   encouragement.textContent = `圣水赐福完成：${describeReward(result.reward)}。`;
+  refreshSkinTerminology();
 });
 
 developerSaveButton.addEventListener('click', async () => {
@@ -660,12 +729,14 @@ developerSaveButton.addEventListener('click', async () => {
 
   render(result.state);
   developerToolsStatus.textContent = result.ok ? '开发数值已保存。' : '需要先开启 Developer Mode。';
+  refreshSkinTerminology();
 });
 
 undoButton.addEventListener('click', async () => {
   const nextState = await window.waterApp.undoWater();
   render(nextState);
   encouragement.textContent = '已撤回一杯，补水记录重新校准。';
+  refreshSkinTerminology();
 });
 
 goalInput.addEventListener('change', () => {
@@ -710,6 +781,7 @@ customIntervalInput.addEventListener('keydown', (event) => {
 shopEntryButton.addEventListener('click', () => {
   setView('shop');
   shopStatus.textContent = '购买后可以随时回来切换皮肤。';
+  refreshSkinTerminology();
 });
 
 shopBackButton.addEventListener('click', () => {
@@ -719,13 +791,17 @@ shopBackButton.addEventListener('click', () => {
 remindersEntryButton.addEventListener('click', () => {
   setView('reminders');
   resetReminderForm();
+  refreshSkinTerminology();
 });
 
 remindersBackButton.addEventListener('click', () => {
   setView('home');
 });
 
-reminderResetButton.addEventListener('click', resetReminderForm);
+reminderResetButton.addEventListener('click', () => {
+  resetReminderForm();
+  refreshSkinTerminology();
+});
 
 reminderModeButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -741,12 +817,14 @@ reminderSaveButton.addEventListener('click', async () => {
   if (!title) {
     remindersStatus.textContent = '先写一下要提醒的事项。';
     reminderTitleInput.focus();
+    refreshSkinTerminology();
     return;
   }
 
   if (mode === 'fixed' && !time) {
     remindersStatus.textContent = '请选择一个固定提醒时间。';
     reminderTimeInput.focus();
+    refreshSkinTerminology();
     return;
   }
 
@@ -767,6 +845,7 @@ reminderSaveButton.addEventListener('click', async () => {
   render(nextState);
   resetReminderForm();
   remindersStatus.textContent = '提醒已保存，到点就会弹出来。';
+  refreshSkinTerminology();
 });
 
 reminderTitleInput.addEventListener('keydown', (event) => {
@@ -778,8 +857,11 @@ reminderTitleInput.addEventListener('keydown', (event) => {
 window.addEventListener('keydown', async (event) => {
   if (currentView !== 'home' || isTypingTarget(document.activeElement)) {
     developerKeyBuffer = '';
+    romanceKeyBuffer = '';
     return;
   }
+
+  updateRomanceEasterEgg(event);
 
   if (!event.shiftKey) {
     developerKeyBuffer = '';
@@ -798,12 +880,14 @@ window.addEventListener('keydown', async (event) => {
   encouragement.textContent = result.developerMode
     ? 'Developer Mode 已开启。'
     : 'Developer Mode 已关闭，回到普通模式。';
+  refreshSkinTerminology();
 });
 
 equipSacredButton.addEventListener('click', async () => {
   const result = await window.waterApp.equipSkin('sacred');
   render(result.state);
   shopStatus.textContent = result.ok ? '已切换回神圣圣水皮肤。' : '暂时无法切换皮肤。';
+  refreshSkinTerminology();
 });
 
 originSkinButton.addEventListener('click', async () => {
@@ -818,6 +902,7 @@ originSkinButton.addEventListener('click', async () => {
     : result.reason === 'coin-insufficient'
       ? '圣水金币不足，需要 200 枚。'
       : '暂时无法购买原初皮肤。';
+  refreshSkinTerminology();
 });
 
 hellSkinButton.addEventListener('click', async () => {
@@ -832,6 +917,7 @@ hellSkinButton.addEventListener('click', async () => {
     : result.reason === 'coin-insufficient'
       ? '圣水金币不足，需要 500 枚。'
       : '暂时无法购买恶魔地狱皮肤。';
+  refreshSkinTerminology();
 });
 
 window.waterApp.onStateChanged(render);
